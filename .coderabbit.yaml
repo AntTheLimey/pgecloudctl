@@ -1,0 +1,13 @@
+language: en-US
+reviews:
+  auto_review:
+    enabled: true
+    drafts: false
+  path_instructions:
+    - path: "internal/api/**"
+      instructions: "This is generated code from oapi-codegen. Do not review for style."
+  tools:
+    golangci-lint:
+      enabled: true
+    gitleaks:
+      enabled: true

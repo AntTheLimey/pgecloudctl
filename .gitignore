@@ -1,0 +1,33 @@
+# Build artifacts
+bin/
+dist/
+build/
+coverage.out
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Secrets
+.env
+.env.*
+*.password
+*.key
+*.pem
+
+# Claude Code local state (but track agents/, specs/, plans/)
+.claude/*
+!.claude/agents
+!.claude/specs
+!.claude/plans
+CLAUDE.local.md
+
+# Go
+vendor/
+
+# OS
+.DS_Store
+Thumbs.db
