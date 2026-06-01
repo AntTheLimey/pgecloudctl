@@ -1,0 +1,8 @@
+package: api
+output: internal/api/client.gen.go
+output-options:
+  nullable-type: true
+generate:
+  client: true
+  models: true
+  embedded-spec: false
