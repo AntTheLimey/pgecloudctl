@@ -1,0 +1,47 @@
+version: 2
+
+builds:
+  - main: ./cmd/pgecloudctl
+    binary: pgecloudctl
+    ldflags:
+      - -s -w
+      - -X github.com/AntTheLimey/pgecloudctl/internal/cmd.Version={{.Version}}
+    goos:
+      - darwin
+      - linux
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ignore:
+      - goos: windows
+        goarch: arm64
+
+archives:
+  - format: tar.gz
+    format_overrides:
+      - goos: windows
+        format: zip
+
+checksum:
+  name_template: 'checksums.txt'
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^chore:'
+      - '^test:'
+
+brews:
+  - repository:
+      owner: AntTheLimey
+      name: homebrew-tap
+    homepage: https://github.com/AntTheLimey/pgecloudctl
+    description: CLI for managing pgEdge Cloud resources
+    license: PostgreSQL
+    install: |
+      bin.install "pgecloudctl"
+    test: |
+      system "#{bin}/pgecloudctl", "version"
