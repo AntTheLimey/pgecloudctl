@@ -20,7 +20,7 @@ type Row interface {
 // Any other format returns an error.
 //
 // For table mode, data must be []Row. For JSON mode, data is encoded directly.
-func Print(w io.Writer, format string, data interface{}, headers []string) error {
+func Print(w io.Writer, format string, data any, headers []string) error {
 	switch format {
 	case "json":
 		enc := json.NewEncoder(w)
