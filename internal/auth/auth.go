@@ -78,7 +78,7 @@ func (a *Auth) FetchToken(clientID, clientSecret string) (*config.Token, error) 
 	}
 
 	url := a.APIURL + "/oauth/token"
-	resp, err := http.Post(url, "application/json", bytes.NewReader(body)) //nolint:noctx
+	resp, err := http.Post(url, "application/json", bytes.NewReader(body)) //nolint:noctx // token endpoint is a simple POST without request-scoped context
 	if err != nil {
 		return nil, fmt.Errorf("auth: POST %s: %w", url, err)
 	}

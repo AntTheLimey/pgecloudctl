@@ -12,14 +12,14 @@ import (
 
 // MCP deploy flags.
 var (
-	mcpDeployAllowWrites        bool
-	mcpDeployEmbeddingProvider  string
-	mcpDeployEmbeddingModel     string
-	mcpDeployEmbeddingAPIKey    string
-	mcpDeployOllamaURL          string
-	mcpDeployTargetNodes        []string
-	mcpDeployInitTokens         string
-	mcpDeployInitUsers          string
+	mcpDeployAllowWrites       bool
+	mcpDeployEmbeddingProvider string
+	mcpDeployEmbeddingModel    string
+	mcpDeployEmbeddingAPIKey   string
+	mcpDeployOllamaURL         string
+	mcpDeployTargetNodes       []string
+	mcpDeployInitTokens        string
+	mcpDeployInitUsers         string
 )
 
 // MCP update flags (mirrors deploy).

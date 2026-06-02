@@ -12,11 +12,11 @@ import (
 
 // tasks list flags.
 var (
-	taskListLimit      int
-	taskListOffset     int
-	taskListSubjectID  string
+	taskListLimit       int
+	taskListOffset      int
+	taskListSubjectID   string
 	taskListSubjectKind string
-	taskListStatus     string
+	taskListStatus      string
 )
 
 // tasks wait flags.

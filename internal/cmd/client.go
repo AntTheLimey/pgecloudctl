@@ -19,26 +19,13 @@ const (
 	ExitNotFound = 4
 )
 
-// exitError carries a message and an exit code for use with handleError.
+// exitError carries a message and an exit code for use with command error handling.
 type exitError struct {
 	msg  string
 	code int
 }
 
 func (e *exitError) Error() string { return e.msg }
-
-// handleError prints err to cmd's stderr and returns an appropriate exit code.
-// It understands *exitError for precise exit codes; everything else maps to
-// ExitError.
-func handleError(err error) int {
-	if err == nil {
-		return ExitOK
-	}
-	if ee, ok := err.(*exitError); ok {
-		return ee.code
-	}
-	return ExitError
-}
 
 // checkResponse inspects the HTTP status code and returns a descriptive
 // *exitError for any non-2xx status, or nil on success.

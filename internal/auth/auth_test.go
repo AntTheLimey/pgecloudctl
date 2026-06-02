@@ -126,7 +126,7 @@ func TestFetchToken(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"access_token": "test-jwt-token",
 			"token_type":   "Bearer",
 			"expires_in":   86400,
@@ -162,7 +162,7 @@ func TestGetToken_CachesAndRefreshes(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fetchCount++
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"access_token": "fresh-token",
 			"token_type":   "Bearer",
 			"expires_in":   86400,
@@ -223,7 +223,7 @@ func TestGetToken_RefreshesWhenNearExpiry(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fetchCount++
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"access_token": "refreshed-token",
 			"token_type":   "Bearer",
 			"expires_in":   86400,
