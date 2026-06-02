@@ -12,14 +12,16 @@ linters:
     - unused
     - gosimple
     - gocritic
-    - gofmt
     - misspell
+  settings:
+    gocritic:
+      enabled-tags:
+        - diagnostic
+        - style
   exclusions:
     paths:
       - internal/api
 
-settings:
-  gocritic:
-    enabled-tags:
-      - diagnostic
-      - style
+formatters:
+  enable:
+    - gofmt
