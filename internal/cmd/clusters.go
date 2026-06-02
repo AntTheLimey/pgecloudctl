@@ -111,7 +111,7 @@ func runClustersList(cmd *cobra.Command, _ []string) error {
 	rows := make([]output.Row, 0, len(*clusters))
 	for _, c := range *clusters {
 		rows = append(rows, clusterRow{
-			id:      truncateID(c.Id),
+			id:      c.Id,
 			name:    c.Name,
 			status:  c.Status,
 			regions: joinStrings(c.Regions),
@@ -167,7 +167,7 @@ func runClustersGet(cmd *cobra.Command, args []string) error {
 
 	rows := []output.Row{
 		clusterRow{
-			id:      truncateID(c.Id),
+			id:      c.Id,
 			name:    c.Name,
 			status:  c.Status,
 			regions: joinStrings(c.Regions),

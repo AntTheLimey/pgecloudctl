@@ -127,7 +127,7 @@ func runCloudAccountsList(cmd *cobra.Command, _ []string) error {
 	rows := make([]output.Row, 0, len(*accounts))
 	for _, a := range *accounts {
 		rows = append(rows, cloudAccountRow{
-			id:      truncateID(a.Id),
+			id:      a.Id,
 			name:    a.Name,
 			typ:     a.Type,
 			created: formatTime(a.CreatedAt),
@@ -182,7 +182,7 @@ func runCloudAccountsGet(cmd *cobra.Command, args []string) error {
 
 	rows := []output.Row{
 		cloudAccountRow{
-			id:      truncateID(a.Id),
+			id:      a.Id,
 			name:    a.Name,
 			typ:     a.Type,
 			created: formatTime(a.CreatedAt),

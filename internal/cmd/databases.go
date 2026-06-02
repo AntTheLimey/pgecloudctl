@@ -135,11 +135,11 @@ func runDatabasesList(cmd *cobra.Command, _ []string) error {
 	rows := make([]output.Row, 0, len(*databases))
 	for _, d := range *databases {
 		rows = append(rows, databaseRow{
-			id:        truncateID(d.Id),
+			id:        d.Id,
 			name:      d.Name,
 			status:    d.Status,
 			pgVersion: derefString(d.PgVersion),
-			clusterID: truncateID(d.ClusterId),
+			clusterID: d.ClusterId,
 			created:   formatTime(d.CreatedAt),
 		})
 	}
@@ -193,11 +193,11 @@ func runDatabasesGet(cmd *cobra.Command, args []string) error {
 
 	rows := []output.Row{
 		databaseRow{
-			id:        truncateID(d.Id),
+			id:        d.Id,
 			name:      d.Name,
 			status:    d.Status,
 			pgVersion: derefString(d.PgVersion),
-			clusterID: truncateID(d.ClusterId),
+			clusterID: d.ClusterId,
 			created:   formatTime(d.CreatedAt),
 		},
 	}

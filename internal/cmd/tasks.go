@@ -214,17 +214,17 @@ func runTasksWait(cmd *cobra.Command, args []string) error {
 				return output.Print(cmd.OutOrStdout(), "json", &t, nil)
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "Task %s: %s\n",
-				truncateID(t.Id), t.Status)
+				t.Id, t.Status)
 			return nil
 
 		case "failed":
 			if flagOutput == "json" {
 				_ = output.Print(cmd.OutOrStdout(), "json", &t, nil)
 			}
-			msg := fmt.Sprintf("task %s failed", truncateID(t.Id))
+			msg := fmt.Sprintf("task %s failed", t.Id)
 			if t.Error != nil && *t.Error != "" {
 				msg = fmt.Sprintf("task %s failed: %s",
-					truncateID(t.Id), *t.Error)
+					t.Id, *t.Error)
 			}
 			return &ExitError{msg: msg, code: ExitGeneral}
 
@@ -232,7 +232,7 @@ func runTasksWait(cmd *cobra.Command, args []string) error {
 			// queued or running — show progress in table mode
 			if flagOutput != "json" {
 				fmt.Fprintf(cmd.OutOrStdout(), "Task %s: %s...\n",
-					truncateID(t.Id), t.Status)
+					t.Id, t.Status)
 			}
 		}
 
@@ -240,7 +240,7 @@ func runTasksWait(cmd *cobra.Command, args []string) error {
 			return &ExitError{
 				msg: fmt.Sprintf(
 					"timed out after %ds waiting for task %s (last status: %s)",
-					taskWaitTimeout, truncateID(taskID), t.Status),
+					taskWaitTimeout, taskID, t.Status),
 				code: ExitTimeout,
 			}
 		}
@@ -261,9 +261,9 @@ func (r taskRowData) Columns() []string {
 
 // taskRow converts an api.Task into a taskRowData for table output.
 func taskRow(t api.Task) taskRowData {
-	subject := fmt.Sprintf("%s/%s", t.SubjectKind, truncateID(t.SubjectId))
+	subject := fmt.Sprintf("%s/%s", t.SubjectKind, t.SubjectId)
 	return taskRowData{
-		id:      truncateID(t.Id),
+		id:      t.Id,
 		name:    t.Name,
 		status:  t.Status,
 		subject: subject,
