@@ -14,13 +14,12 @@ linters:
     - gocritic
     - gofmt
     - misspell
+  exclusions:
+    paths:
+      - internal/api
 
-linters-settings:
+settings:
   gocritic:
     enabled-tags:
       - diagnostic
       - style
-
-issues:
-  exclude-dirs:
-    - internal/api
