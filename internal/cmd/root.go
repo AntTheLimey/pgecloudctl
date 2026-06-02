@@ -1,14 +1,46 @@
 package cmd
 
 import (
+	"os"
+
 	"github.com/spf13/cobra"
 )
 
-var Version = "dev"
+var (
+	Version = "dev"
+
+	flagAPIURL   string
+	flagOutput   string
+	flagNoColor  bool
+	flagVerbose  bool
+	flagClientID string
+	flagSecret   string
+)
 
 var rootCmd = &cobra.Command{
-	Use:   "pgecloudctl",
-	Short: "CLI for managing pgEdge Cloud resources",
+	Use:          "pgecloudctl",
+	Short:        "CLI for managing pgEdge Cloud resources",
+	Long:         "pgecloudctl manages pgEdge Cloud clusters, databases, and services via the REST API.",
+	SilenceUsage: true,
+}
+
+func init() {
+	rootCmd.PersistentFlags().StringVar(&flagAPIURL, "api-url",
+		"https://api.pgedge.com", "API base URL")
+	rootCmd.PersistentFlags().StringVarP(&flagOutput, "output", "o",
+		"table", "Output format: table, json")
+	rootCmd.PersistentFlags().BoolVar(&flagNoColor, "no-color",
+		false, "Disable color output")
+	rootCmd.PersistentFlags().BoolVarP(&flagVerbose, "verbose", "v",
+		false, "Show HTTP request/response details")
+	rootCmd.PersistentFlags().StringVar(&flagClientID, "client-id",
+		"", "API client ID (overrides config/env)")
+	rootCmd.PersistentFlags().StringVar(&flagSecret, "client-secret",
+		"", "API client secret (overrides config/env)")
+
+	if v := os.Getenv("PGEDGE_API_URL"); v != "" {
+		flagAPIURL = v
+	}
 }
 
 func Execute() error {
