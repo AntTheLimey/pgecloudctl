@@ -86,7 +86,7 @@ func runDBServicesGet(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	return &exitError{
+	return &ExitError{
 		msg:  fmt.Sprintf("service %q not found on database %s", svcID, args[0]),
 		code: ExitNotFound,
 	}
@@ -112,9 +112,9 @@ func runDBServicesRemove(cmd *cobra.Command, args []string) error {
 
 	id, err := uuid.Parse(dbID)
 	if err != nil {
-		return &exitError{
+		return &ExitError{
 			msg:  fmt.Sprintf("invalid database ID %q: %v", dbID, err),
-			code: ExitError,
+			code: ExitGeneral,
 		}
 	}
 
@@ -166,9 +166,9 @@ func runDBServicesRemove(cmd *cobra.Command, args []string) error {
 func fetchDatabase(idStr string) (*api.Database, error) {
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		return nil, &exitError{
+		return nil, &ExitError{
 			msg:  fmt.Sprintf("invalid database ID %q: %v", idStr, err),
-			code: ExitError,
+			code: ExitGeneral,
 		}
 	}
 
@@ -189,7 +189,7 @@ func fetchDatabase(idStr string) (*api.Database, error) {
 	}
 
 	if resp.JSON200 == nil {
-		return nil, &exitError{
+		return nil, &ExitError{
 			msg:  fmt.Sprintf("database %q not found", idStr),
 			code: ExitNotFound,
 		}

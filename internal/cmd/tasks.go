@@ -144,7 +144,7 @@ func runTasksGet(cmd *cobra.Command, args []string) error {
 
 	tasks := resp.JSON200
 	if tasks == nil || len(*tasks) == 0 {
-		return &exitError{
+		return &ExitError{
 			msg:  fmt.Sprintf("task %q not found", taskID),
 			code: ExitNotFound,
 		}
@@ -200,7 +200,7 @@ func runTasksWait(cmd *cobra.Command, args []string) error {
 
 		tasks := resp.JSON200
 		if tasks == nil || len(*tasks) == 0 {
-			return &exitError{
+			return &ExitError{
 				msg:  fmt.Sprintf("task %q not found", taskID),
 				code: ExitNotFound,
 			}
@@ -226,7 +226,7 @@ func runTasksWait(cmd *cobra.Command, args []string) error {
 				msg = fmt.Sprintf("task %s failed: %s",
 					truncateID(t.Id), *t.Error)
 			}
-			return &exitError{msg: msg, code: ExitError}
+			return &ExitError{msg: msg, code: ExitGeneral}
 
 		default:
 			// queued or running — show progress in table mode
@@ -237,7 +237,7 @@ func runTasksWait(cmd *cobra.Command, args []string) error {
 		}
 
 		if time.Now().Add(interval).After(deadline) {
-			return &exitError{
+			return &ExitError{
 				msg: fmt.Sprintf(
 					"timed out after %ds waiting for task %s (last status: %s)",
 					taskWaitTimeout, truncateID(taskID), t.Status),

@@ -79,8 +79,10 @@ func init() {
 
 	_ = dbRAGDeployCmd.MarkFlagRequired("embedding-llm-provider")
 	_ = dbRAGDeployCmd.MarkFlagRequired("embedding-llm-model")
+	_ = dbRAGDeployCmd.MarkFlagRequired("embedding-llm-api-key")
 	_ = dbRAGDeployCmd.MarkFlagRequired("completion-llm-provider")
 	_ = dbRAGDeployCmd.MarkFlagRequired("completion-llm-model")
+	_ = dbRAGDeployCmd.MarkFlagRequired("completion-llm-api-key")
 	_ = dbRAGDeployCmd.MarkFlagRequired("pipeline-config")
 
 	// update flags (same set, none required)
@@ -192,9 +194,9 @@ func applyRAGService(
 
 	id, err := uuid.Parse(dbID)
 	if err != nil {
-		return &exitError{
+		return &ExitError{
 			msg:  fmt.Sprintf("invalid database ID %q: %v", dbID, err),
-			code: ExitError,
+			code: ExitGeneral,
 		}
 	}
 

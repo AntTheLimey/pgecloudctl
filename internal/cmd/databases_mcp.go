@@ -146,9 +146,9 @@ func applyMCPService(
 
 	id, err := uuid.Parse(dbID)
 	if err != nil {
-		return &exitError{
+		return &ExitError{
 			msg:  fmt.Sprintf("invalid database ID %q: %v", dbID, err),
-			code: ExitError,
+			code: ExitGeneral,
 		}
 	}
 

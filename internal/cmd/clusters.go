@@ -135,9 +135,9 @@ var clustersGetCmd = &cobra.Command{
 func runClustersGet(cmd *cobra.Command, args []string) error {
 	id, err := uuid.Parse(args[0])
 	if err != nil {
-		return &exitError{
+		return &ExitError{
 			msg:  fmt.Sprintf("invalid cluster ID %q: %v", args[0], err),
-			code: ExitError,
+			code: ExitGeneral,
 		}
 	}
 
@@ -236,9 +236,9 @@ var clustersDeleteCmd = &cobra.Command{
 func runClustersDelete(cmd *cobra.Command, args []string) error {
 	id, err := uuid.Parse(args[0])
 	if err != nil {
-		return &exitError{
+		return &ExitError{
 			msg:  fmt.Sprintf("invalid cluster ID %q: %v", args[0], err),
-			code: ExitError,
+			code: ExitGeneral,
 		}
 	}
 

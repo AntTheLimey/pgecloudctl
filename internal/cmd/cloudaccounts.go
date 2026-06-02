@@ -150,9 +150,9 @@ var cloudAccountsGetCmd = &cobra.Command{
 func runCloudAccountsGet(cmd *cobra.Command, args []string) error {
 	id, err := uuid.Parse(args[0])
 	if err != nil {
-		return &exitError{
+		return &ExitError{
 			msg:  fmt.Sprintf("invalid cloud account ID %q: %v", args[0], err),
-			code: ExitError,
+			code: ExitGeneral,
 		}
 	}
 
@@ -209,9 +209,9 @@ func runCloudAccountsCreate(cmd *cobra.Command, _ []string) error {
 	switch providerType {
 	case "aws":
 		if caCreateRoleARN == "" {
-			return &exitError{
+			return &ExitError{
 				msg:  "--role-arn is required for --type aws",
-				code: ExitError,
+				code: ExitGeneral,
 			}
 		}
 		if err := creds.FromAwsCredentials(api.AwsCredentials{
@@ -235,12 +235,12 @@ func runCloudAccountsCreate(cmd *cobra.Command, _ []string) error {
 			missing = append(missing, "--azure-client-secret")
 		}
 		if len(missing) > 0 {
-			return &exitError{
+			return &ExitError{
 				msg: fmt.Sprintf(
 					"%s required for --type azure",
 					strings.Join(missing, ", "),
 				),
-				code: ExitError,
+				code: ExitGeneral,
 			}
 		}
 		azCreds := api.AzureCredentials{
@@ -265,12 +265,12 @@ func runCloudAccountsCreate(cmd *cobra.Command, _ []string) error {
 			missing = append(missing, "--service-account")
 		}
 		if len(missing) > 0 {
-			return &exitError{
+			return &ExitError{
 				msg: fmt.Sprintf(
 					"%s required for --type gcp",
 					strings.Join(missing, ", "),
 				),
-				code: ExitError,
+				code: ExitGeneral,
 			}
 		}
 		if err := creds.FromGoogleCredentials(api.GoogleCredentials{
@@ -282,9 +282,9 @@ func runCloudAccountsCreate(cmd *cobra.Command, _ []string) error {
 		}
 
 	default:
-		return &exitError{
+		return &ExitError{
 			msg:  fmt.Sprintf("unknown provider type %q: must be aws, azure, or gcp", caCreateType),
-			code: ExitError,
+			code: ExitGeneral,
 		}
 	}
 
@@ -341,9 +341,9 @@ var cloudAccountsDeleteCmd = &cobra.Command{
 func runCloudAccountsDelete(cmd *cobra.Command, args []string) error {
 	id, err := uuid.Parse(args[0])
 	if err != nil {
-		return &exitError{
+		return &ExitError{
 			msg:  fmt.Sprintf("invalid cloud account ID %q: %v", args[0], err),
-			code: ExitError,
+			code: ExitGeneral,
 		}
 	}
 

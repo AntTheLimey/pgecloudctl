@@ -12,47 +12,49 @@ import (
 
 // Exit codes used by CLI commands.
 const (
-	ExitOK       = 0
-	ExitError    = 1
-	ExitAuth     = 2
-	ExitTimeout  = 3
-	ExitNotFound = 4
+	ExitOK        = 0
+	ExitGeneral   = 1
+	ExitAuth      = 2
+	ExitTimeout   = 3
+	ExitNotFound  = 4
 )
 
-// exitError carries a message and an exit code for use with command error handling.
-type exitError struct {
+// ExitError carries a message and an exit code for use with command error handling.
+// Exported so main.go can extract the code for os.Exit.
+type ExitError struct {
 	msg  string
 	code int
 }
 
-func (e *exitError) Error() string { return e.msg }
+func (e *ExitError) Error() string { return e.msg }
+func (e *ExitError) Code() int    { return e.code }
 
 // checkResponse inspects the HTTP status code and returns a descriptive
-// *exitError for any non-2xx status, or nil on success.
+// *ExitError for any non-2xx status, or nil on success.
 func checkResponse(status int, body string) error {
 	if status >= 200 && status < 300 {
 		return nil
 	}
 	switch status {
 	case http.StatusUnauthorized, http.StatusForbidden:
-		return &exitError{
+		return &ExitError{
 			msg:  fmt.Sprintf("authentication error (%d): %s", status, body),
 			code: ExitAuth,
 		}
 	case http.StatusNotFound:
-		return &exitError{
+		return &ExitError{
 			msg:  fmt.Sprintf("resource not found (%d): %s", status, body),
 			code: ExitNotFound,
 		}
 	case http.StatusRequestTimeout, http.StatusGatewayTimeout:
-		return &exitError{
+		return &ExitError{
 			msg:  fmt.Sprintf("request timed out (%d): %s", status, body),
 			code: ExitTimeout,
 		}
 	default:
-		return &exitError{
+		return &ExitError{
 			msg:  fmt.Sprintf("API error (%d): %s", status, body),
-			code: ExitError,
+			code: ExitGeneral,
 		}
 	}
 }
@@ -65,12 +67,12 @@ func newAPIClient() (*api.ClientWithResponses, error) {
 
 	creds, _, err := a.ResolveCredentials(flagClientID, flagSecret)
 	if err != nil {
-		return nil, &exitError{msg: err.Error(), code: ExitAuth}
+		return nil, &ExitError{msg: err.Error(), code: ExitAuth}
 	}
 
 	token, err := a.GetToken(creds.ClientID, creds.ClientSecret)
 	if err != nil {
-		return nil, &exitError{
+		return nil, &ExitError{
 			msg:  fmt.Sprintf("authentication failed: %v", err),
 			code: ExitAuth,
 		}
