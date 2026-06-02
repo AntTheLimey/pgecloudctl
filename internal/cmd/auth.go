@@ -32,7 +32,10 @@ var authLoginCmd = &cobra.Command{
 		reader := bufio.NewReader(os.Stdin)
 
 		fmt.Fprint(cmd.OutOrStdout(), "Client ID: ")
-		clientID, _ := reader.ReadString('\n')
+		clientID, err := reader.ReadString('\n')
+		if err != nil {
+			return fmt.Errorf("read client ID: %w", err)
+		}
 		clientID = strings.TrimSpace(clientID)
 
 		fmt.Fprint(cmd.OutOrStdout(), "Client Secret: ")

@@ -34,9 +34,9 @@ func init() {
 	rootCmd.PersistentFlags().BoolVarP(&flagVerbose, "verbose", "v",
 		false, "Show HTTP request/response details")
 	rootCmd.PersistentFlags().StringVar(&flagClientID, "client-id",
-		"", "API client ID (overrides config/env)")
+		"", "API client ID (overrides config file)")
 	rootCmd.PersistentFlags().StringVar(&flagSecret, "client-secret",
-		"", "API client secret (overrides config/env)")
+		"", "API client secret (overrides config file)")
 
 	if v := os.Getenv("PGEDGE_API_URL"); v != "" {
 		flagAPIURL = v

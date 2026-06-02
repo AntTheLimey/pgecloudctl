@@ -33,7 +33,7 @@ var dbServicesListCmd = &cobra.Command{
 }
 
 func runDBServicesList(cmd *cobra.Command, args []string) error {
-	db, err := fetchDatabase(args[0])
+	_, db, err := fetchDatabase(args[0])
 	if err != nil {
 		return err
 	}
@@ -66,7 +66,7 @@ var dbServicesGetCmd = &cobra.Command{
 }
 
 func runDBServicesGet(cmd *cobra.Command, args []string) error {
-	db, err := fetchDatabase(args[0])
+	_, db, err := fetchDatabase(args[0])
 	if err != nil {
 		return err
 	}
@@ -105,7 +105,7 @@ func runDBServicesRemove(cmd *cobra.Command, args []string) error {
 	dbID := args[0]
 	svcType := args[1]
 
-	db, err := fetchDatabase(dbID)
+	client, db, err := fetchDatabase(dbID)
 	if err != nil {
 		return err
 	}
@@ -116,11 +116,6 @@ func runDBServicesRemove(cmd *cobra.Command, args []string) error {
 			msg:  fmt.Sprintf("invalid database ID %q: %v", dbID, err),
 			code: ExitGeneral,
 		}
-	}
-
-	client, err := newAPIClient()
-	if err != nil {
-		return err
 	}
 
 	// Build a new services list excluding the specified type.
@@ -161,20 +156,14 @@ func runDBServicesRemove(cmd *cobra.Command, args []string) error {
 
 // --- shared helpers ---
 
-// fetchDatabase retrieves a Database by ID string, returning a descriptive
-// error on parse failure or API error.
-func fetchDatabase(idStr string) (*api.Database, error) {
+// fetchDatabaseWith retrieves a Database using an existing API client.
+func fetchDatabaseWith(client *api.ClientWithResponses, idStr string) (*api.Database, error) {
 	id, err := uuid.Parse(idStr)
 	if err != nil {
 		return nil, &ExitError{
 			msg:  fmt.Sprintf("invalid database ID %q: %v", idStr, err),
 			code: ExitGeneral,
 		}
-	}
-
-	client, err := newAPIClient()
-	if err != nil {
-		return nil, err
 	}
 
 	resp, err := client.GetDatabaseWithResponse(
@@ -196,6 +185,19 @@ func fetchDatabase(idStr string) (*api.Database, error) {
 	}
 
 	return resp.JSON200, nil
+}
+
+// fetchDatabase creates an API client and retrieves a Database by ID string.
+func fetchDatabase(idStr string) (*api.ClientWithResponses, *api.Database, error) {
+	client, err := newAPIClient()
+	if err != nil {
+		return nil, nil, err
+	}
+	db, err := fetchDatabaseWith(client, idStr)
+	if err != nil {
+		return nil, nil, err
+	}
+	return client, db, nil
 }
 
 // buildServiceList returns a services slice that preserves all existing

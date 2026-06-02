@@ -187,7 +187,7 @@ func applyRAGService(
 	pipelineConfigPath string,
 	targetNodes []string,
 ) error {
-	db, err := fetchDatabase(dbID)
+	client, db, err := fetchDatabase(dbID)
 	if err != nil {
 		return err
 	}
@@ -261,11 +261,6 @@ func applyRAGService(
 
 	services := buildServiceList(db, newSvc)
 	svcs := nullable.NewNullableWithValue(services)
-
-	client, err := newAPIClient()
-	if err != nil {
-		return err
-	}
 
 	body := api.UpdateDatabaseJSONRequestBody{
 		Services: svcs,
