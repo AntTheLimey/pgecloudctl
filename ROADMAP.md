@@ -56,6 +56,9 @@ Items ranked by weighted score. Higher = do first.
 | YAML output format | 2 | 2 | S (1) | 6.0 | Planned | v0.2 |
 | --verbose HTTP tracing | 3 | 2 | S (1) | 8.0 | Planned | v0.2 — debugging |
 | Install script | 2 | 2 | S (1) | 6.0 | Planned | v0.2 |
+| UUID prefix matching | 3 | 2 | S (1) | 8.0 | Idea | v0.2 — accept short IDs like Docker does |
+| Command-level tests | 3 | 3 | M (2) | 4.5 | Planned | v0.2 — checkResponse, buildServiceList, wait loop |
+| --no-color / --verbose wiring | 2 | 2 | S (1) | 6.0 | Planned | v0.2 — flags declared but not yet functional |
 | llms.txt | 4 | 3 | M (2) | 5.5 | Planned | v0.3 — AI discoverability |
 | Claude Code skill | 4 | 3 | M (2) | 5.5 | Planned | v0.3 — Claude Code integration |
 | AI workflow recipes | 3 | 2 | M (2) | 4.0 | Planned | v0.3 — docs/guides for AI agents |
