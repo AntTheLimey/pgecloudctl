@@ -12,11 +12,11 @@ import (
 
 // Exit codes used by CLI commands.
 const (
-	ExitOK        = 0
-	ExitGeneral   = 1
-	ExitAuth      = 2
-	ExitTimeout   = 3
-	ExitNotFound  = 4
+	ExitOK       = 0
+	ExitGeneral  = 1
+	ExitAuth     = 2
+	ExitTimeout  = 3
+	ExitNotFound = 4
 )
 
 // ExitError carries a message and an exit code for use with command error handling.
@@ -27,7 +27,7 @@ type ExitError struct {
 }
 
 func (e *ExitError) Error() string { return e.msg }
-func (e *ExitError) Code() int    { return e.code }
+func (e *ExitError) Code() int     { return e.code }
 
 // checkResponse inspects the HTTP status code and returns a descriptive
 // *ExitError for any non-2xx status, or nil on success.
