@@ -1,0 +1,259 @@
+package cmd
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/AntTheLimey/pgecloudctl/internal/api"
+	"github.com/AntTheLimey/pgecloudctl/internal/output"
+	"github.com/google/uuid"
+	"github.com/oapi-codegen/nullable"
+	"github.com/spf13/cobra"
+)
+
+func init() {
+	databasesCmd.AddCommand(dbServicesCmd)
+	dbServicesCmd.AddCommand(dbServicesListCmd)
+	dbServicesCmd.AddCommand(dbServicesGetCmd)
+	dbServicesCmd.AddCommand(dbServicesRemoveCmd)
+}
+
+var dbServicesCmd = &cobra.Command{
+	Use:   "services",
+	Short: "Manage services deployed alongside a database",
+}
+
+// --- list ---
+
+var dbServicesListCmd = &cobra.Command{
+	Use:   "list <db-id>",
+	Short: "List services deployed on a database",
+	Args:  cobra.ExactArgs(1),
+	RunE:  runDBServicesList,
+}
+
+func runDBServicesList(cmd *cobra.Command, args []string) error {
+	db, err := fetchDatabase(args[0])
+	if err != nil {
+		return err
+	}
+
+	if flagOutput == "json" {
+		return output.Print(cmd.OutOrStdout(), "json", db.Services, nil)
+	}
+
+	if db.Services == nil || len(*db.Services) == 0 {
+		fmt.Fprintln(cmd.OutOrStdout(), "No services found.")
+		return nil
+	}
+
+	rows := make([]output.Row, 0, len(*db.Services))
+	for _, svc := range *db.Services {
+		rows = append(rows, serviceRow(svc))
+	}
+
+	headers := []string{"SERVICE ID", "TYPE", "STATE", "PORT", "DOMAIN"}
+	return output.Print(cmd.OutOrStdout(), "table", rows, headers)
+}
+
+// --- get ---
+
+var dbServicesGetCmd = &cobra.Command{
+	Use:   "get <db-id> <service-id>",
+	Short: "Get details of a specific service",
+	Args:  cobra.ExactArgs(2),
+	RunE:  runDBServicesGet,
+}
+
+func runDBServicesGet(cmd *cobra.Command, args []string) error {
+	db, err := fetchDatabase(args[0])
+	if err != nil {
+		return err
+	}
+
+	svcID := args[1]
+
+	if db.Services != nil {
+		for _, svc := range *db.Services {
+			if svc.ServiceId == svcID {
+				if flagOutput == "json" {
+					return output.Print(cmd.OutOrStdout(), "json", &svc, nil)
+				}
+				rows := []output.Row{serviceRow(svc)}
+				headers := []string{"SERVICE ID", "TYPE", "STATE", "PORT", "DOMAIN"}
+				return output.Print(cmd.OutOrStdout(), "table", rows, headers)
+			}
+		}
+	}
+
+	return &exitError{
+		msg:  fmt.Sprintf("service %q not found on database %s", svcID, args[0]),
+		code: ExitNotFound,
+	}
+}
+
+// --- remove ---
+
+var dbServicesRemoveCmd = &cobra.Command{
+	Use:   "remove <db-id> <type>",
+	Short: "Remove a service type from a database (mcp or rag)",
+	Args:  cobra.ExactArgs(2),
+	RunE:  runDBServicesRemove,
+}
+
+func runDBServicesRemove(cmd *cobra.Command, args []string) error {
+	dbID := args[0]
+	svcType := args[1]
+
+	db, err := fetchDatabase(dbID)
+	if err != nil {
+		return err
+	}
+
+	id, err := uuid.Parse(dbID)
+	if err != nil {
+		return &exitError{
+			msg:  fmt.Sprintf("invalid database ID %q: %v", dbID, err),
+			code: ExitError,
+		}
+	}
+
+	client, err := newAPIClient()
+	if err != nil {
+		return err
+	}
+
+	// Build a new services list excluding the specified type.
+	remaining := make([]api.ServiceConfig, 0)
+	if db.Services != nil {
+		for _, svc := range *db.Services {
+			if string(svc.ServiceType) != svcType {
+				cfg := api.ServiceConfig{
+					ServiceId:   &svc.ServiceId,
+					ServiceType: api.ServiceConfigServiceType(svc.ServiceType),
+					McpConfig:   svc.McpConfig,
+					RagConfig:   svc.RagConfig,
+					TargetNodes: svc.TargetNodes,
+				}
+				remaining = append(remaining, cfg)
+			}
+		}
+	}
+
+	svcs := nullable.NewNullableWithValue(remaining)
+	body := api.UpdateDatabaseJSONRequestBody{
+		Services: svcs,
+	}
+
+	resp, err := client.UpdateDatabaseWithResponse(context.Background(), id, body)
+	if err != nil {
+		return fmt.Errorf("remove service: %w", err)
+	}
+
+	if err := checkResponse(resp.StatusCode(), string(resp.Body)); err != nil {
+		return err
+	}
+
+	fmt.Fprintf(cmd.OutOrStdout(), "Service type %q removed from database %s.\n",
+		svcType, dbID)
+	return nil
+}
+
+// --- shared helpers ---
+
+// fetchDatabase retrieves a Database by ID string, returning a descriptive
+// error on parse failure or API error.
+func fetchDatabase(idStr string) (*api.Database, error) {
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		return nil, &exitError{
+			msg:  fmt.Sprintf("invalid database ID %q: %v", idStr, err),
+			code: ExitError,
+		}
+	}
+
+	client, err := newAPIClient()
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := client.GetDatabaseWithResponse(
+		context.Background(), id, &api.GetDatabaseParams{},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("get database: %w", err)
+	}
+
+	if err := checkResponse(resp.StatusCode(), string(resp.Body)); err != nil {
+		return nil, err
+	}
+
+	if resp.JSON200 == nil {
+		return nil, &exitError{
+			msg:  fmt.Sprintf("database %q not found", idStr),
+			code: ExitNotFound,
+		}
+	}
+
+	return resp.JSON200, nil
+}
+
+// buildServiceList returns a services slice that preserves all existing
+// services whose type differs from newSvc.ServiceType, then appends newSvc.
+// This implements the read-modify-write pattern for service updates.
+func buildServiceList(db *api.Database, newSvc api.ServiceConfig) []api.ServiceConfig {
+	result := make([]api.ServiceConfig, 0)
+	if db.Services != nil {
+		for _, svc := range *db.Services {
+			if string(svc.ServiceType) != string(newSvc.ServiceType) {
+				cfg := api.ServiceConfig{
+					ServiceId:   &svc.ServiceId,
+					ServiceType: api.ServiceConfigServiceType(svc.ServiceType),
+					McpConfig:   svc.McpConfig,
+					RagConfig:   svc.RagConfig,
+					TargetNodes: svc.TargetNodes,
+				}
+				result = append(result, cfg)
+			}
+		}
+	}
+	result = append(result, newSvc)
+	return result
+}
+
+// --- row adapter ---
+
+type svcRowData struct {
+	id, typ, state, port, domain string
+}
+
+func (r svcRowData) Columns() []string {
+	return []string{r.id, r.typ, r.state, r.port, r.domain}
+}
+
+func serviceRow(svc api.Service) svcRowData {
+	state := ""
+	if v, err := svc.State.Get(); err == nil {
+		state = v
+	}
+
+	port := ""
+	if v, err := svc.Port.Get(); err == nil {
+		port = fmt.Sprintf("%d", v)
+	}
+
+	domain := ""
+	if v, err := svc.PublicDomain.Get(); err == nil && v != "" {
+		domain = v
+	} else if v, err := svc.PrivateDomain.Get(); err == nil && v != "" {
+		domain = v
+	}
+
+	return svcRowData{
+		id:     svc.ServiceId,
+		typ:    string(svc.ServiceType),
+		state:  state,
+		port:   port,
+		domain: domain,
+	}
+}
