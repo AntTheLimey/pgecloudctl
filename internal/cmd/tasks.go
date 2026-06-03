@@ -96,8 +96,8 @@ func runTasksList(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
-	if flagOutput == "json" {
-		return output.Print(cmd.OutOrStdout(), "json", resp.JSON200, nil)
+	if flagOutput != "table" {
+		return output.Print(cmd.OutOrStdout(), flagOutput, resp.JSON200, nil)
 	}
 
 	tasks := resp.JSON200
@@ -152,8 +152,8 @@ func runTasksGet(cmd *cobra.Command, args []string) error {
 
 	t := (*tasks)[0]
 
-	if flagOutput == "json" {
-		return output.Print(cmd.OutOrStdout(), "json", &t, nil)
+	if flagOutput != "table" {
+		return output.Print(cmd.OutOrStdout(), flagOutput, &t, nil)
 	}
 
 	rows := []output.Row{taskRow(t)}
@@ -210,16 +210,16 @@ func runTasksWait(cmd *cobra.Command, args []string) error {
 
 		switch t.Status {
 		case "succeeded":
-			if flagOutput == "json" {
-				return output.Print(cmd.OutOrStdout(), "json", &t, nil)
+			if flagOutput != "table" {
+				return output.Print(cmd.OutOrStdout(), flagOutput, &t, nil)
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "Task %s: %s\n",
 				t.Id, t.Status)
 			return nil
 
 		case "failed":
-			if flagOutput == "json" {
-				_ = output.Print(cmd.OutOrStdout(), "json", &t, nil)
+			if flagOutput != "table" {
+				_ = output.Print(cmd.OutOrStdout(), flagOutput, &t, nil)
 			}
 			msg := fmt.Sprintf("task %s failed", t.Id)
 			if t.Error != nil && *t.Error != "" {
@@ -230,7 +230,7 @@ func runTasksWait(cmd *cobra.Command, args []string) error {
 
 		default:
 			// queued or running — show progress in table mode
-			if flagOutput != "json" {
+			if flagOutput == "table" {
 				fmt.Fprintf(cmd.OutOrStdout(), "Task %s: %s...\n",
 					t.Id, t.Status)
 			}
@@ -256,7 +256,7 @@ type taskRowData struct {
 }
 
 func (r taskRowData) Columns() []string {
-	return []string{r.id, r.name, r.status, r.subject, r.created}
+	return []string{r.id, r.name, output.ColorStatus(r.status), r.subject, r.created}
 }
 
 // taskRow converts an api.Task into a taskRowData for table output.

@@ -98,8 +98,8 @@ func runClustersList(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
-	if flagOutput == "json" {
-		return output.Print(cmd.OutOrStdout(), "json", resp.JSON200, nil)
+	if flagOutput != "table" {
+		return output.Print(cmd.OutOrStdout(), flagOutput, resp.JSON200, nil)
 	}
 
 	clusters := resp.JSON200
@@ -155,8 +155,8 @@ func runClustersGet(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	if flagOutput == "json" {
-		return output.Print(cmd.OutOrStdout(), "json", resp.JSON200, nil)
+	if flagOutput != "table" {
+		return output.Print(cmd.OutOrStdout(), flagOutput, resp.JSON200, nil)
 	}
 
 	c := resp.JSON200
@@ -209,8 +209,8 @@ func runClustersCreate(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
-	if flagOutput == "json" {
-		return output.Print(cmd.OutOrStdout(), "json", resp.JSON200, nil)
+	if flagOutput != "table" {
+		return output.Print(cmd.OutOrStdout(), flagOutput, resp.JSON200, nil)
 	}
 
 	c := resp.JSON200
@@ -280,5 +280,5 @@ type clusterRow struct {
 }
 
 func (r clusterRow) Columns() []string {
-	return []string{r.id, r.name, r.status, r.regions, r.created}
+	return []string{r.id, r.name, output.ColorStatus(r.status), r.regions, r.created}
 }

@@ -38,8 +38,8 @@ func runDBServicesList(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	if flagOutput == "json" {
-		return output.Print(cmd.OutOrStdout(), "json", db.Services, nil)
+	if flagOutput != "table" {
+		return output.Print(cmd.OutOrStdout(), flagOutput, db.Services, nil)
 	}
 
 	if db.Services == nil || len(*db.Services) == 0 {
@@ -76,8 +76,8 @@ func runDBServicesGet(cmd *cobra.Command, args []string) error {
 	if db.Services != nil {
 		for _, svc := range *db.Services {
 			if svc.ServiceId == svcID {
-				if flagOutput == "json" {
-					return output.Print(cmd.OutOrStdout(), "json", &svc, nil)
+				if flagOutput != "table" {
+					return output.Print(cmd.OutOrStdout(), flagOutput, &svc, nil)
 				}
 				rows := []output.Row{serviceRow(svc)}
 				headers := []string{"SERVICE ID", "TYPE", "STATE", "PORT", "DOMAIN"}
@@ -230,7 +230,7 @@ type svcRowData struct {
 }
 
 func (r svcRowData) Columns() []string {
-	return []string{r.id, r.typ, r.state, r.port, r.domain}
+	return []string{r.id, r.typ, output.ColorStatus(r.state), r.port, r.domain}
 }
 
 func serviceRow(svc api.Service) svcRowData {

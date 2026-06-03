@@ -116,8 +116,8 @@ func runCloudAccountsList(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
-	if flagOutput == "json" {
-		return output.Print(cmd.OutOrStdout(), "json", resp.JSON200, nil)
+	if flagOutput != "table" {
+		return output.Print(cmd.OutOrStdout(), flagOutput, resp.JSON200, nil)
 	}
 
 	accounts := resp.JSON200
@@ -172,8 +172,8 @@ func runCloudAccountsGet(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	if flagOutput == "json" {
-		return output.Print(cmd.OutOrStdout(), "json", resp.JSON200, nil)
+	if flagOutput != "table" {
+		return output.Print(cmd.OutOrStdout(), flagOutput, resp.JSON200, nil)
 	}
 
 	a := resp.JSON200
@@ -315,8 +315,8 @@ func runCloudAccountsCreate(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
-	if flagOutput == "json" {
-		return output.Print(cmd.OutOrStdout(), "json", resp.JSON200, nil)
+	if flagOutput != "table" {
+		return output.Print(cmd.OutOrStdout(), flagOutput, resp.JSON200, nil)
 	}
 
 	a := resp.JSON200

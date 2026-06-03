@@ -122,8 +122,8 @@ func runDatabasesList(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
-	if flagOutput == "json" {
-		return output.Print(cmd.OutOrStdout(), "json", resp.JSON200, nil)
+	if flagOutput != "table" {
+		return output.Print(cmd.OutOrStdout(), flagOutput, resp.JSON200, nil)
 	}
 
 	databases := resp.JSON200
@@ -181,8 +181,8 @@ func runDatabasesGet(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	if flagOutput == "json" {
-		return output.Print(cmd.OutOrStdout(), "json", resp.JSON200, nil)
+	if flagOutput != "table" {
+		return output.Print(cmd.OutOrStdout(), flagOutput, resp.JSON200, nil)
 	}
 
 	d := resp.JSON200
@@ -237,8 +237,8 @@ func runDatabasesCreate(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
-	if flagOutput == "json" {
-		return output.Print(cmd.OutOrStdout(), "json", resp.JSON200, nil)
+	if flagOutput != "table" {
+		return output.Print(cmd.OutOrStdout(), flagOutput, resp.JSON200, nil)
 	}
 
 	d := resp.JSON200
@@ -293,8 +293,8 @@ func runDatabasesUpdate(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	if flagOutput == "json" {
-		return output.Print(cmd.OutOrStdout(), "json", resp.JSON200, nil)
+	if flagOutput != "table" {
+		return output.Print(cmd.OutOrStdout(), flagOutput, resp.JSON200, nil)
 	}
 
 	d := resp.JSON200
@@ -364,7 +364,7 @@ type databaseRow struct {
 }
 
 func (r databaseRow) Columns() []string {
-	return []string{r.id, r.name, r.status, r.pgVersion, r.clusterID, r.created}
+	return []string{r.id, r.name, output.ColorStatus(r.status), r.pgVersion, r.clusterID, r.created}
 }
 
 // derefString returns the value of a string pointer, or "" if nil.
