@@ -215,6 +215,13 @@ func runBackupStoresCreate(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
+	if _, err := uuid.Parse(backupStoreCreateCloudAccountID); err != nil {
+		return &ExitError{
+			msg:  fmt.Sprintf("invalid cloud account ID %q: %v", backupStoreCreateCloudAccountID, err),
+			code: ExitGeneral,
+		}
+	}
+
 	body := api.CreateBackupStoreJSONRequestBody{
 		Name:           backupStoreCreateName,
 		CloudAccountId: backupStoreCreateCloudAccountID,

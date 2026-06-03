@@ -175,6 +175,13 @@ func runInvitesCreate(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
+	if inviteCreateExpiration < 0 {
+		return &ExitError{
+			msg:  "--expiration must be a positive number of hours",
+			code: ExitGeneral,
+		}
+	}
+
 	body := api.CreateInviteJSONRequestBody{
 		Email: inviteCreateEmail,
 	}
