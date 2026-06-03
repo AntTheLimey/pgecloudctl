@@ -96,6 +96,26 @@ func TestPrintJSON_SingleObject(t *testing.T) {
 	}
 }
 
+func TestPrintYAML(t *testing.T) {
+	rows := []testRow{
+		{ID: "abc123", Name: "my-db", Status: "active"},
+	}
+
+	var buf bytes.Buffer
+	err := output.Print(&buf, "yaml", rows, nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	out := buf.String()
+	if !strings.Contains(out, "id: abc123") {
+		t.Errorf("output missing 'id: abc123': %q", out)
+	}
+	if !strings.Contains(out, "name: my-db") {
+		t.Errorf("output missing 'name: my-db': %q", out)
+	}
+}
+
 func TestPrintUnsupportedFormat(t *testing.T) {
 	var buf bytes.Buffer
 	err := output.Print(&buf, "xml", []testRow{}, nil)

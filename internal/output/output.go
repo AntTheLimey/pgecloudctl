@@ -6,6 +6,8 @@ import (
 	"io"
 	"strings"
 	"text/tabwriter"
+
+	"gopkg.in/yaml.v3"
 )
 
 // Row is implemented by any type that can provide its column values as strings.
@@ -25,6 +27,11 @@ func Print(w io.Writer, format string, data any, headers []string) error {
 	case "json":
 		enc := json.NewEncoder(w)
 		enc.SetIndent("", "  ")
+		return enc.Encode(data)
+
+	case "yaml":
+		enc := yaml.NewEncoder(w)
+		defer enc.Close()
 		return enc.Encode(data)
 
 	case "table":

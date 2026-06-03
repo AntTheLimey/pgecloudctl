@@ -28,7 +28,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&flagAPIURL, "api-url",
 		"https://api.pgedge.com", "API base URL")
 	rootCmd.PersistentFlags().StringVarP(&flagOutput, "output", "o",
-		"table", "Output format: table, json")
+		"table", "Output format: table, json, yaml")
 	rootCmd.PersistentFlags().BoolVar(&flagNoColor, "no-color",
 		false, "Disable color output")
 	rootCmd.PersistentFlags().BoolVarP(&flagVerbose, "verbose", "v",
