@@ -3,7 +3,9 @@ package cmd
 import (
 	"os"
 
+	"github.com/AntTheLimey/pgecloudctl/internal/output"
 	"github.com/spf13/cobra"
+	"golang.org/x/term"
 )
 
 var (
@@ -22,6 +24,11 @@ var rootCmd = &cobra.Command{
 	Short:        "CLI for managing pgEdge Cloud resources",
 	Long:         "pgecloudctl manages pgEdge Cloud clusters, databases, and services via the REST API.",
 	SilenceUsage: true,
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		output.ColorEnabled = !flagNoColor &&
+			os.Getenv("NO_COLOR") == "" &&
+			term.IsTerminal(int(os.Stdout.Fd()))
+	},
 }
 
 func init() {

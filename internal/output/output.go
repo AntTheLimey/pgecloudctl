@@ -38,7 +38,11 @@ func Print(w io.Writer, format string, data any, headers []string) error {
 		tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
 
 		if len(headers) > 0 {
-			fmt.Fprintln(tw, strings.Join(headers, "\t"))
+			colored := make([]string, len(headers))
+			for i, h := range headers {
+				colored[i] = Bold(h)
+			}
+			fmt.Fprintln(tw, strings.Join(colored, "\t"))
 		}
 
 		if rows, ok := data.([]Row); ok {
