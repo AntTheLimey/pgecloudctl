@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/AntTheLimey/pgecloudctl/internal/api"
 	"github.com/AntTheLimey/pgecloudctl/internal/output"
@@ -15,10 +16,12 @@ import (
 
 // Backup list flags.
 var (
-	backupListDatabaseID string
-	backupListKind       string
-	backupListLimit      int
-	backupListOffset     int
+	backupListDatabaseID   string
+	backupListKind         string
+	backupListLimit        int
+	backupListOffset       int
+	backupListCreatedAfter  string
+	backupListCreatedBefore string
 )
 
 // Backup create flags.
@@ -50,6 +53,10 @@ func init() {
 		"Maximum number of results to return")
 	backupsListCmd.Flags().IntVar(&backupListOffset, "offset", 0,
 		"Offset into the results for pagination")
+	backupsListCmd.Flags().StringVar(&backupListCreatedAfter,
+		"created-after", "", "Filter: created after this RFC3339 timestamp")
+	backupsListCmd.Flags().StringVar(&backupListCreatedBefore,
+		"created-before", "", "Filter: created before this RFC3339 timestamp")
 
 	// create flags
 	backupsCreateCmd.Flags().StringVar(&backupCreateDatabaseID, "database-id", "",
@@ -63,7 +70,6 @@ func init() {
 	backupsCreateCmd.Flags().StringSliceVar(&backupCreateTargetNodes, "target-nodes", nil,
 		"Comma-separated list of target nodes")
 	_ = backupsCreateCmd.MarkFlagRequired("database-id")
-	_ = backupsCreateCmd.MarkFlagRequired("provider")
 
 	// delete flags
 	backupsDeleteCmd.Flags().BoolVarP(&backupDeleteYes, "yes", "y",
@@ -109,6 +115,26 @@ func runBackupsList(cmd *cobra.Command, _ []string) error {
 	if backupListOffset > 0 {
 		params.Offset = &backupListOffset
 	}
+	if backupListCreatedAfter != "" {
+		t, err := time.Parse(time.RFC3339, backupListCreatedAfter)
+		if err != nil {
+			return &ExitError{
+				msg:  fmt.Sprintf("invalid --created-after timestamp: %v", err),
+				code: ExitGeneral,
+			}
+		}
+		params.CreatedAfter = &t
+	}
+	if backupListCreatedBefore != "" {
+		t, err := time.Parse(time.RFC3339, backupListCreatedBefore)
+		if err != nil {
+			return &ExitError{
+				msg:  fmt.Sprintf("invalid --created-before timestamp: %v", err),
+				code: ExitGeneral,
+			}
+		}
+		params.CreatedBefore = &t
+	}
 
 	resp, err := client.ListBackupsWithResponse(context.Background(), params)
 	if err != nil {
@@ -119,8 +145,8 @@ func runBackupsList(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
-	if flagOutput == "json" {
-		return output.Print(cmd.OutOrStdout(), "json", resp.JSON200, nil)
+	if flagOutput != "table" {
+		return output.Print(cmd.OutOrStdout(), flagOutput, resp.JSON200, nil)
 	}
 
 	backups := resp.JSON200
@@ -178,8 +204,8 @@ func runBackupsGet(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	if flagOutput == "json" {
-		return output.Print(cmd.OutOrStdout(), "json", resp.JSON200, nil)
+	if flagOutput != "table" {
+		return output.Print(cmd.OutOrStdout(), flagOutput, resp.JSON200, nil)
 	}
 
 	b := resp.JSON200
@@ -332,8 +358,8 @@ func runBackupsURL(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	if flagOutput == "json" {
-		return output.Print(cmd.OutOrStdout(), "json", resp.JSON200, nil)
+	if flagOutput != "table" {
+		return output.Print(cmd.OutOrStdout(), flagOutput, resp.JSON200, nil)
 	}
 
 	link := resp.JSON200

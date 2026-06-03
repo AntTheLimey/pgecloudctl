@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/AntTheLimey/pgecloudctl/internal/api"
 	"github.com/AntTheLimey/pgecloudctl/internal/output"
@@ -15,8 +16,10 @@ import (
 
 // Backup store list flags.
 var (
-	backupStoreListLimit  int
-	backupStoreListOffset int
+	backupStoreListLimit         int
+	backupStoreListOffset        int
+	backupStoreListCreatedAfter  string
+	backupStoreListCreatedBefore string
 )
 
 // Backup store create flags.
@@ -41,6 +44,10 @@ func init() {
 		"Maximum number of results to return")
 	backupStoresListCmd.Flags().IntVar(&backupStoreListOffset, "offset", 0,
 		"Offset into the results for pagination")
+	backupStoresListCmd.Flags().StringVar(&backupStoreListCreatedAfter,
+		"created-after", "", "Filter: created after this RFC3339 timestamp")
+	backupStoresListCmd.Flags().StringVar(&backupStoreListCreatedBefore,
+		"created-before", "", "Filter: created before this RFC3339 timestamp")
 
 	// create flags
 	backupStoresCreateCmd.Flags().StringVar(&backupStoreCreateName, "name", "",
@@ -83,6 +90,26 @@ func runBackupStoresList(cmd *cobra.Command, _ []string) error {
 	if backupStoreListOffset > 0 {
 		params.Offset = &backupStoreListOffset
 	}
+	if backupStoreListCreatedAfter != "" {
+		t, err := time.Parse(time.RFC3339, backupStoreListCreatedAfter)
+		if err != nil {
+			return &ExitError{
+				msg:  fmt.Sprintf("invalid --created-after timestamp: %v", err),
+				code: ExitGeneral,
+			}
+		}
+		params.CreatedAfter = &t
+	}
+	if backupStoreListCreatedBefore != "" {
+		t, err := time.Parse(time.RFC3339, backupStoreListCreatedBefore)
+		if err != nil {
+			return &ExitError{
+				msg:  fmt.Sprintf("invalid --created-before timestamp: %v", err),
+				code: ExitGeneral,
+			}
+		}
+		params.CreatedBefore = &t
+	}
 
 	resp, err := client.ListBackupStoresWithResponse(context.Background(), params)
 	if err != nil {
@@ -93,8 +120,8 @@ func runBackupStoresList(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
-	if flagOutput == "json" {
-		return output.Print(cmd.OutOrStdout(), "json", resp.JSON200, nil)
+	if flagOutput != "table" {
+		return output.Print(cmd.OutOrStdout(), flagOutput, resp.JSON200, nil)
 	}
 
 	stores := resp.JSON200
@@ -150,8 +177,8 @@ func runBackupStoresGet(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	if flagOutput == "json" {
-		return output.Print(cmd.OutOrStdout(), "json", resp.JSON200, nil)
+	if flagOutput != "table" {
+		return output.Print(cmd.OutOrStdout(), flagOutput, resp.JSON200, nil)
 	}
 
 	s := resp.JSON200
@@ -205,8 +232,8 @@ func runBackupStoresCreate(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
-	if flagOutput == "json" {
-		return output.Print(cmd.OutOrStdout(), "json", resp.JSON200, nil)
+	if flagOutput != "table" {
+		return output.Print(cmd.OutOrStdout(), flagOutput, resp.JSON200, nil)
 	}
 
 	s := resp.JSON200

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/AntTheLimey/pgecloudctl/internal/api"
 	"github.com/AntTheLimey/pgecloudctl/internal/output"
@@ -15,8 +16,10 @@ import (
 
 // Ingress list flags.
 var (
-	ingressListLimit  int
-	ingressListOffset int
+	ingressListLimit         int
+	ingressListOffset        int
+	ingressListCreatedAfter  string
+	ingressListCreatedBefore string
 )
 
 // Ingress create flags.
@@ -41,6 +44,10 @@ func init() {
 		"Maximum number of results to return")
 	ingressesListCmd.Flags().IntVar(&ingressListOffset, "offset", 0,
 		"Offset into the results for pagination")
+	ingressesListCmd.Flags().StringVar(&ingressListCreatedAfter,
+		"created-after", "", "Filter: created after this RFC3339 timestamp")
+	ingressesListCmd.Flags().StringVar(&ingressListCreatedBefore,
+		"created-before", "", "Filter: created before this RFC3339 timestamp")
 
 	// create flags
 	ingressesCreateCmd.Flags().StringVar(&ingressCreateName, "name", "",
@@ -83,6 +90,26 @@ func runIngressesList(cmd *cobra.Command, _ []string) error {
 	}
 	if ingressListOffset > 0 {
 		params.Offset = &ingressListOffset
+	}
+	if ingressListCreatedAfter != "" {
+		t, err := time.Parse(time.RFC3339, ingressListCreatedAfter)
+		if err != nil {
+			return &ExitError{
+				msg:  fmt.Sprintf("invalid --created-after timestamp: %v", err),
+				code: ExitGeneral,
+			}
+		}
+		params.CreatedAfter = &t
+	}
+	if ingressListCreatedBefore != "" {
+		t, err := time.Parse(time.RFC3339, ingressListCreatedBefore)
+		if err != nil {
+			return &ExitError{
+				msg:  fmt.Sprintf("invalid --created-before timestamp: %v", err),
+				code: ExitGeneral,
+			}
+		}
+		params.CreatedBefore = &t
 	}
 
 	resp, err := client.ListIngressesWithResponse(context.Background(), params)
