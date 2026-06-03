@@ -19,6 +19,10 @@ CLI for managing [pgEdge Cloud](https://www.pgedge.com) resources.
 Download from
 [Releases](https://github.com/AntTheLimey/pgecloudctl/releases).
 
+### Script
+
+    curl -fsSL https://raw.githubusercontent.com/AntTheLimey/pgecloudctl/main/install.sh | sh
+
 ## Quick Start
 
 ```bash
@@ -70,6 +74,37 @@ export PGEDGE_CLIENT_SECRET="your-client-secret"
 | `tasks wait <id>` | Wait for task completion |
 | `cloud-accounts list` | List cloud accounts |
 | `cloud-accounts create` | Create a cloud account |
+| `cloud-accounts cloudformation-template` | Get AWS IAM template |
+| `backups list` | List backups |
+| `backups get <id>` | Get backup details |
+| `backups create` | Create a backup |
+| `backups delete <id>` | Delete a backup |
+| `backups url <id>` | Get backup download URL |
+| `backup-stores list` | List backup stores |
+| `backup-stores get <id>` | Get backup store details |
+| `backup-stores create` | Create a backup store |
+| `backup-stores delete <id>` | Delete a backup store |
+| `ssh-keys list` | List SSH keys |
+| `ssh-keys get <id>` | Get SSH key details |
+| `ssh-keys create` | Create an SSH key |
+| `ssh-keys delete <id>` | Delete an SSH key |
+| `ingresses list` | List ingresses |
+| `ingresses get <id>` | Get ingress details |
+| `ingresses create` | Create an ingress |
+| `ingresses delete <id>` | Delete an ingress |
+| `ingresses services list <id>` | List services on an ingress |
+| `ingresses services register <id>` | Register a service |
+| `ingresses services deregister <id> <svc-id>` | Deregister a service |
+| `invites list` | List invites |
+| `invites create` | Create an invite |
+| `invites accept <id>` | Accept an invite |
+| `invites delete <id>` | Delete an invite |
+| `memberships list` | List team members |
+| `memberships delete <id>` | Remove a team member |
+| `clusters shares list <id>` | List cluster shares |
+| `clusters shares create <id>` | Create a cluster share |
+| `clusters shares get <id> <share-id>` | Get share details |
+| `clusters shares delete <id> <share-id>` | Delete a share |
 | `version` | Print version |
 
 ## Global Flags
@@ -77,7 +112,7 @@ export PGEDGE_CLIENT_SECRET="your-client-secret"
 | Flag | Description |
 |------|-------------|
 | `--api-url` | API base URL (default: api.pgedge.com) |
-| `-o, --output` | Output format: table, json (default: table) |
+| `-o, --output` | Output format: table, json, yaml (default: table) |
 | `--no-color` | Disable color output |
 | `-v, --verbose` | Show HTTP request/response details |
 
