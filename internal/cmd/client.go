@@ -83,9 +83,19 @@ func newAPIClient() (*api.ClientWithResponses, error) {
 		return nil
 	}
 
+	httpClient := http.DefaultClient
+	if flagVerbose {
+		httpClient = &http.Client{
+			Transport: &verboseTransport{
+				base: http.DefaultTransport,
+			},
+		}
+	}
+
 	client, err := api.NewClientWithResponses(
 		flagAPIURL,
 		api.WithRequestEditorFn(bearerEditor),
+		api.WithHTTPClient(httpClient),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("create API client: %w", err)
