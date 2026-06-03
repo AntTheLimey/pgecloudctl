@@ -70,6 +70,7 @@ func init() {
 	backupsCreateCmd.Flags().StringSliceVar(&backupCreateTargetNodes, "target-nodes", nil,
 		"Comma-separated list of target nodes")
 	_ = backupsCreateCmd.MarkFlagRequired("database-id")
+	_ = backupsCreateCmd.MarkFlagRequired("provider")
 
 	// delete flags
 	backupsDeleteCmd.Flags().BoolVarP(&backupDeleteYes, "yes", "y",

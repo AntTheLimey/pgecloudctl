@@ -1,9 +1,5 @@
 package output
 
-import "os"
-
-// ColorEnabled controls whether ANSI color codes are emitted.
-// Set to true by root command when stdout is a terminal and NO_COLOR is unset.
 var ColorEnabled bool
 
 const (
@@ -13,12 +9,6 @@ const (
 	green  = "\033[32m"
 	yellow = "\033[33m"
 )
-
-func init() {
-	if os.Getenv("NO_COLOR") != "" {
-		ColorEnabled = false
-	}
-}
 
 // Bold wraps s in ANSI bold escape codes when color is enabled.
 func Bold(s string) string {

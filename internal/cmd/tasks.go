@@ -236,7 +236,7 @@ func runTasksWait(cmd *cobra.Command, args []string) error {
 			}
 		}
 
-		if time.Now().Add(interval).After(deadline) {
+		if time.Now().After(deadline) {
 			return &ExitError{
 				msg: fmt.Sprintf(
 					"timed out after %ds waiting for task %s (last status: %s)",

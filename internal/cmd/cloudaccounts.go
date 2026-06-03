@@ -406,7 +406,15 @@ func runCloudAccountsCFTemplate(cmd *cobra.Command, _ []string) error {
 		return output.Print(cmd.OutOrStdout(), flagOutput, resp.JSON200, nil)
 	}
 
-	fmt.Fprintln(cmd.OutOrStdout(), string(resp.Body))
+	templates := resp.JSON200
+	if templates == nil || len(*templates) == 0 {
+		fmt.Fprintln(cmd.OutOrStdout(), "No template returned.")
+		return nil
+	}
+
+	for _, tmpl := range *templates {
+		fmt.Fprintln(cmd.OutOrStdout(), tmpl.Url)
+	}
 	return nil
 }
 
