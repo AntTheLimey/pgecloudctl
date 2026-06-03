@@ -38,6 +38,7 @@ brews:
   - repository:
       owner: AntTheLimey
       name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
     homepage: https://github.com/AntTheLimey/pgecloudctl
     description: CLI for managing pgEdge Cloud resources
     license: PostgreSQL
