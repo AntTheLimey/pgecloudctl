@@ -83,6 +83,8 @@ func init() {
 	// delete flags
 	cloudAccountsDeleteCmd.Flags().BoolVarP(&caDeleteYes, "yes", "y",
 		false, "Skip confirmation prompt")
+
+	cloudAccountsCmd.AddCommand(cloudAccountsCFTemplateCmd)
 }
 
 var cloudAccountsCmd = &cobra.Command{
@@ -374,6 +376,37 @@ func runCloudAccountsDelete(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Fprintf(cmd.OutOrStdout(), "Cloud account %s deleted.\n", args[0])
+	return nil
+}
+
+// --- cloudformation-template ---
+
+var cloudAccountsCFTemplateCmd = &cobra.Command{
+	Use:   "cloudformation-template",
+	Short: "Get the CloudFormation template for AWS IAM setup",
+	RunE:  runCloudAccountsCFTemplate,
+}
+
+func runCloudAccountsCFTemplate(cmd *cobra.Command, _ []string) error {
+	client, err := newAPIClient()
+	if err != nil {
+		return err
+	}
+
+	resp, err := client.GetCloudFormationTemplateWithResponse(context.Background())
+	if err != nil {
+		return fmt.Errorf("get cloudformation template: %w", err)
+	}
+
+	if err := checkResponse(resp.StatusCode(), string(resp.Body)); err != nil {
+		return err
+	}
+
+	if flagOutput != "table" {
+		return output.Print(cmd.OutOrStdout(), flagOutput, resp.JSON200, nil)
+	}
+
+	fmt.Fprintln(cmd.OutOrStdout(), string(resp.Body))
 	return nil
 }
 
