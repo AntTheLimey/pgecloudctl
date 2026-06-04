@@ -2,6 +2,7 @@ version: 2
 
 before:
   hooks:
+    - mkdir -p dist
     - tar -czf dist/pgecloudctl_{{ .Version }}_skill.tar.gz .claude-plugin/ skills/
 
 builds:
