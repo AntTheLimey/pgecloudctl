@@ -17,8 +17,10 @@ active database.
   and service registration step is required after deployment
 - **Pipeline configuration** — `pipeline.json` defines which tables, columns,
   and retrieval strategy to use; at least one pipeline entry is required
-- **Target nodes** — omit `--target-nodes` to deploy on all nodes; specify a
-  subset for staged rollout
+- **Target nodes** — on single-node clusters, `--target-nodes` is optional
+  (the node is auto-selected); on multi-node clusters, `--target-nodes` is
+  required. Values are node names (e.g. `n1,n2`), not UUIDs — the CLI
+  resolves names to host IDs automatically
 
 ## Sample pipeline.json
 
@@ -102,7 +104,7 @@ Optional flags:
 |--------------------|------------------------------------------------------|
 | `--token-budget`   | Max tokens per RAG response                          |
 | `--top-n`          | Number of retrieved chunks to pass to the LLM        |
-| `--target-nodes`   | Comma-separated list of node IDs to deploy on        |
+| `--target-nodes`   | Node names to deploy on (auto-selects on single-node clusters) |
 
 Capture `task_id` from the response as `<rag-task-id>`.
 

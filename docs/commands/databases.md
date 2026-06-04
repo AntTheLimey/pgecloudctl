@@ -165,6 +165,14 @@ Database f6a7b8c9-d0e1-2345-fabc-456789012345 deleted.
 
 Manage services (MCP, RAG) deployed alongside a database.
 
+> **WARNING: Destructive API behavior.** The pgEdge Cloud API treats the
+> `services` field as fully declarative — whatever you send REPLACES all
+> existing services on the database. If you deploy a RAG server without
+> including the existing MCP server in the request, the MCP server will be
+> destroyed. The CLI handles this automatically via a read-modify-write
+> pattern, but direct API callers must include all existing services in
+> every update.
+
 ### services list
 
 List all services deployed on a database.
@@ -274,10 +282,14 @@ Deploy an MCP server alongside an existing database.
 | `--embedding-model string` | No | Embedding model identifier (required when --embedding-provider is set) |
 | `--embedding-api-key string` | No | API key for the embedding provider (required for openai and voyage) |
 | `--ollama-url string` | No | Endpoint URL for an Ollama server (required when --embedding-provider is ollama) |
-| `--target-nodes strings` | No | Ordered list of database node names the MCP service connects to |
+| `--target-nodes strings` | No | Node names to deploy on (e.g. n1,n2). Auto-selects if cluster has one node |
 | `--init-tokens string` | No | Bearer token forwarded to the MCP server as INIT_TOKENS |
 | `--init-users string` | No | Comma-separated username:password pairs forwarded as INIT_USERS |
 | `-h, --help` | No | help for deploy |
+
+Node names are resolved to host UUIDs automatically. On single-node
+clusters, `--target-nodes` can be omitted and the node is auto-selected.
+On multi-node clusters, `--target-nodes` is required.
 
 **Example:**
 
@@ -285,7 +297,7 @@ Deploy an MCP server alongside an existing database.
 pgecloudctl databases mcp deploy f6a7b8c9-d0e1-2345-fabc-456789012345 \
     --embedding-provider openai \
     --embedding-model text-embedding-3-small \
-    --embedding-api-key sk-proj-abc123
+    --embedding-api-key "$OPENAI_API_KEY"
 ```
 
 **Example output (table):**
@@ -316,7 +328,7 @@ as `mcp deploy`.
 | `--embedding-model string` | No | Embedding model identifier (required when --embedding-provider is set) |
 | `--embedding-api-key string` | No | API key for the embedding provider (required for openai and voyage) |
 | `--ollama-url string` | No | Endpoint URL for an Ollama server (required when --embedding-provider is ollama) |
-| `--target-nodes strings` | No | Ordered list of database node names the MCP service connects to |
+| `--target-nodes strings` | No | Node names to deploy on (e.g. n1,n2). Auto-selects if cluster has one node |
 | `--init-tokens string` | No | Bearer token forwarded to the MCP server as INIT_TOKENS |
 | `--init-users string` | No | Comma-separated username:password pairs forwarded as INIT_USERS |
 | `-h, --help` | No | help for update |
@@ -359,10 +371,14 @@ Deploy a RAG server alongside an existing database.
 | `--completion-llm-model string` | No | Completion LLM model identifier |
 | `--completion-llm-api-key string` | No | API key for the completion LLM provider |
 | `--pipeline-config string` | No | Path to a JSON file containing pipeline definitions |
-| `--target-nodes strings` | No | Ordered list of database node names the RAG service connects to |
+| `--target-nodes strings` | No | Node names to deploy on (e.g. n1,n2). Auto-selects if cluster has one node |
 | `--top-n int` | No | Default number of results to retrieve per pipeline |
 | `--token-budget int` | No | Default max completion tokens across all pipelines |
 | `-h, --help` | No | help for deploy |
+
+Node names are resolved to host UUIDs automatically. On single-node
+clusters, `--target-nodes` can be omitted and the node is auto-selected.
+On multi-node clusters, `--target-nodes` is required.
 
 **Example:**
 
@@ -370,10 +386,10 @@ Deploy a RAG server alongside an existing database.
 pgecloudctl databases rag deploy f6a7b8c9-d0e1-2345-fabc-456789012345 \
     --embedding-llm-provider openai \
     --embedding-llm-model text-embedding-3-small \
-    --embedding-llm-api-key sk-proj-abc123 \
+    --embedding-llm-api-key "$OPENAI_API_KEY" \
     --completion-llm-provider openai \
     --completion-llm-model gpt-4o \
-    --completion-llm-api-key sk-proj-abc123 \
+    --completion-llm-api-key "$OPENAI_API_KEY" \
     --top-n 5 \
     --token-budget 2048
 ```
@@ -408,7 +424,7 @@ as `rag deploy`.
 | `--completion-llm-model string` | No | Completion LLM model identifier |
 | `--completion-llm-api-key string` | No | API key for the completion LLM provider |
 | `--pipeline-config string` | No | Path to a JSON file containing pipeline definitions |
-| `--target-nodes strings` | No | Ordered list of database node names the RAG service connects to |
+| `--target-nodes strings` | No | Node names to deploy on (e.g. n1,n2). Auto-selects if cluster has one node |
 | `--top-n int` | No | Default number of results to retrieve per pipeline |
 | `--token-budget int` | No | Default max completion tokens across all pipelines |
 | `-h, --help` | No | help for update |

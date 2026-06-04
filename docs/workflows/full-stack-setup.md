@@ -116,8 +116,9 @@ pgecloudctl databases mcp deploy <db-id> \
   -o json
 ```
 
-Additional optional flags: `--allow-writes`, `--target-nodes <nodes>`,
-`--init-tokens <n>`, `--init-users <n>`.
+Additional optional flags: `--allow-writes`, `--target-nodes <node-names>`
+(auto-selects on single-node clusters), `--init-tokens <n>`,
+`--init-users <n>`.
 
 Capture `task_id` and run:
 
@@ -143,7 +144,7 @@ pgecloudctl databases rag deploy <db-id> \
 ```
 
 Additional optional flags: `--token-budget <n>`, `--top-n <n>`,
-`--target-nodes <nodes>`.
+`--target-nodes <node-names>` (auto-selects on single-node clusters).
 
 Capture `task_id` and run:
 
