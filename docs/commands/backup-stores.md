@@ -29,7 +29,7 @@ pgecloudctl backup-stores list
 
 **Example output (table):**
 
-```
+```text
 ID                                    NAME          REGION       CLOUD ACCOUNT
 f2a3b4c5-d6e7-8901-fabc-012345678901  primary-bkp   us-east-1    c3d4e5f6-a7b8-9012-cdef-123456789012
 ```
@@ -56,7 +56,7 @@ pgecloudctl backup-stores get f2a3b4c5-d6e7-8901-fabc-012345678901
 
 **Example output (table):**
 
-```
+```text
 FIELD             VALUE
 ID                f2a3b4c5-d6e7-8901-fabc-012345678901
 Name              primary-bkp
@@ -93,7 +93,7 @@ pgecloudctl backup-stores create \
 
 **Example output (table):**
 
-```
+```text
 FIELD     VALUE
 ID        f2a3b4c5-d6e7-8901-fabc-012345678901
 Name      primary-bkp
@@ -124,6 +124,6 @@ pgecloudctl backup-stores delete f2a3b4c5-d6e7-8901-fabc-012345678901 --yes
 
 **Example output (table):**
 
-```
+```text
 Backup store f2a3b4c5-d6e7-8901-fabc-012345678901 deleted.
 ```

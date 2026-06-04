@@ -25,7 +25,7 @@ pgecloudctl invites list
 
 **Example output (table):**
 
-```
+```text
 ID                                    EMAIL                  STATUS     EXPIRES
 d6e7f8a9-b0c1-2345-defa-456789012345  alice@example.com      pending    2026-06-10T00:00:00Z
 e7f8a9b0-c1d2-3456-efab-567890123456  bob@example.com        pending    2026-06-15T00:00:00Z
@@ -53,7 +53,7 @@ pgecloudctl invites get d6e7f8a9-b0c1-2345-defa-456789012345
 
 **Example output (table):**
 
-```
+```text
 FIELD    VALUE
 ID       d6e7f8a9-b0c1-2345-defa-456789012345
 Email    alice@example.com
@@ -88,7 +88,7 @@ pgecloudctl invites create \
 
 **Example output (table):**
 
-```
+```text
 FIELD    VALUE
 ID       d6e7f8a9-b0c1-2345-defa-456789012345
 Email    alice@example.com
@@ -119,7 +119,7 @@ pgecloudctl invites delete d6e7f8a9-b0c1-2345-defa-456789012345 --yes
 
 **Example output (table):**
 
-```
+```text
 Invite d6e7f8a9-b0c1-2345-defa-456789012345 deleted.
 ```
 
@@ -147,6 +147,6 @@ pgecloudctl invites accept d6e7f8a9-b0c1-2345-defa-456789012345 \
 
 **Example output (table):**
 
-```
+```text
 Invite accepted. You have joined the team.
 ```

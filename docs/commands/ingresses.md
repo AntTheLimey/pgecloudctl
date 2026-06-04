@@ -29,7 +29,7 @@ pgecloudctl ingresses list
 
 **Example output (table):**
 
-```
+```text
 ID                                    NAME          REGION       CLUSTER                                STATUS
 c5d6e7f8-a9b0-1234-cdef-345678901234  prod-ingress  us-east-1    a1b2c3d4-e5f6-7890-abcd-ef1234567890   active
 ```
@@ -56,7 +56,7 @@ pgecloudctl ingresses get c5d6e7f8-a9b0-1234-cdef-345678901234
 
 **Example output (table):**
 
-```
+```text
 FIELD       VALUE
 ID          c5d6e7f8-a9b0-1234-cdef-345678901234
 Name        prod-ingress
@@ -95,7 +95,7 @@ pgecloudctl ingresses create \
 
 **Example output (table):**
 
-```
+```text
 FIELD     VALUE
 ID        c5d6e7f8-a9b0-1234-cdef-345678901234
 Name      prod-ingress
@@ -126,7 +126,7 @@ pgecloudctl ingresses delete c5d6e7f8-a9b0-1234-cdef-345678901234 --yes
 
 **Example output (table):**
 
-```
+```text
 Ingress c5d6e7f8-a9b0-1234-cdef-345678901234 deleted.
 ```
 
@@ -156,7 +156,7 @@ pgecloudctl ingresses services list c5d6e7f8-a9b0-1234-cdef-345678901234
 
 **Example output (table):**
 
-```
+```text
 SERVICE ID                            DATABASE ID                           TYPE
 a7b8c9d0-e1f2-3456-abcd-567890123456  f6a7b8c9-d0e1-2345-fabc-456789012345  mcp
 ```
@@ -187,7 +187,7 @@ pgecloudctl ingresses services register c5d6e7f8-a9b0-1234-cdef-345678901234 \
 
 **Example output (table):**
 
-```
+```text
 Service a7b8c9d0-e1f2-3456-abcd-567890123456 registered on ingress c5d6e7f8-a9b0-1234-cdef-345678901234.
 ```
 
@@ -215,6 +215,6 @@ pgecloudctl ingresses services deregister \
 
 **Example output (table):**
 
-```
+```text
 Service a7b8c9d0-e1f2-3456-abcd-567890123456 deregistered from ingress c5d6e7f8-a9b0-1234-cdef-345678901234.
 ```

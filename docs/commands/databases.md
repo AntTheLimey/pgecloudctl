@@ -29,7 +29,7 @@ pgecloudctl databases list \
 
 **Example output (table):**
 
-```
+```text
 ID                                    NAME      PG VERSION    STATUS    CLUSTER
 f6a7b8c9-d0e1-2345-fabc-456789012345  mydb      16            active    a1b2c3d4-e5f6-7890-abcd-ef1234567890
 ```
@@ -56,7 +56,7 @@ pgecloudctl databases get f6a7b8c9-d0e1-2345-fabc-456789012345
 
 **Example output (table):**
 
-```
+```text
 FIELD         VALUE
 ID            f6a7b8c9-d0e1-2345-fabc-456789012345
 Name          mydb
@@ -95,7 +95,7 @@ pgecloudctl databases create \
 
 **Example output (table):**
 
-```
+```text
 FIELD       VALUE
 ID          f6a7b8c9-d0e1-2345-fabc-456789012345
 Name        mydb
@@ -128,7 +128,7 @@ pgecloudctl databases update f6a7b8c9-d0e1-2345-fabc-456789012345 \
 
 **Example output (table):**
 
-```
+```text
 Database f6a7b8c9-d0e1-2345-fabc-456789012345 updated.
 ```
 
@@ -155,7 +155,7 @@ pgecloudctl databases delete f6a7b8c9-d0e1-2345-fabc-456789012345 --yes
 
 **Example output (table):**
 
-```
+```text
 Database f6a7b8c9-d0e1-2345-fabc-456789012345 deleted.
 ```
 
@@ -185,7 +185,7 @@ pgecloudctl databases services list f6a7b8c9-d0e1-2345-fabc-456789012345
 
 **Example output (table):**
 
-```
+```text
 ID                                    TYPE    STATUS
 a7b8c9d0-e1f2-3456-abcd-567890123456  mcp     active
 b8c9d0e1-f2a3-4567-bcde-678901234567  rag     active
@@ -215,7 +215,7 @@ pgecloudctl databases services get \
 
 **Example output (table):**
 
-```
+```text
 FIELD     VALUE
 ID        a7b8c9d0-e1f2-3456-abcd-567890123456
 Type      mcp
@@ -247,7 +247,7 @@ pgecloudctl databases services remove \
 
 **Example output (table):**
 
-```
+```text
 Service mcp removed from database f6a7b8c9-d0e1-2345-fabc-456789012345.
 ```
 
@@ -290,7 +290,7 @@ pgecloudctl databases mcp deploy f6a7b8c9-d0e1-2345-fabc-456789012345 \
 
 **Example output (table):**
 
-```
+```text
 FIELD     VALUE
 ID        a7b8c9d0-e1f2-3456-abcd-567890123456
 Type      mcp
@@ -331,7 +331,7 @@ pgecloudctl databases mcp update f6a7b8c9-d0e1-2345-fabc-456789012345 \
 
 **Example output (table):**
 
-```
+```text
 MCP service updated on database f6a7b8c9-d0e1-2345-fabc-456789012345.
 ```
 
@@ -380,7 +380,7 @@ pgecloudctl databases rag deploy f6a7b8c9-d0e1-2345-fabc-456789012345 \
 
 **Example output (table):**
 
-```
+```text
 FIELD     VALUE
 ID        b8c9d0e1-f2a3-4567-bcde-678901234567
 Type      rag
@@ -423,6 +423,6 @@ pgecloudctl databases rag update f6a7b8c9-d0e1-2345-fabc-456789012345 \
 
 **Example output (table):**
 
-```
+```text
 RAG service updated on database f6a7b8c9-d0e1-2345-fabc-456789012345.
 ```

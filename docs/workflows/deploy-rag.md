@@ -72,14 +72,17 @@ valid table and column references.
 
 ### Step 4: Deploy RAG
 
+> **Security note:** Use environment variables for API keys to avoid
+> exposing them in shell history.
+
 ```bash
 pgecloudctl databases rag deploy <db-id> \
   --embedding-llm-provider <provider> \
   --embedding-llm-model <embedding-model> \
-  --embedding-llm-api-key <embedding-api-key> \
+  --embedding-llm-api-key "$OPENAI_API_KEY" \
   --completion-llm-provider <provider> \
   --completion-llm-model <completion-model> \
-  --completion-llm-api-key <completion-api-key> \
+  --completion-llm-api-key "$OPENAI_API_KEY" \
   --pipeline-config pipeline.json \
   -o json
 ```
@@ -161,11 +164,10 @@ Expected output: a RAG service entry with `"status": "active"`.
 
 ## Error Handling
 
-| Exit Code | Meaning                                  | Recovery                                                    |
-|-----------|------------------------------------------|-------------------------------------------------------------|
-| 1         | Database not found or not accessible     | Verify `<db-id>` with `pgecloudctl databases list`          |
-| 2         | Invalid or missing flag                  | Check all required flags; verify `pipeline.json` path       |
-| 3         | Invalid pipeline config                  | Validate `pipeline.json` structure against the sample above |
-| 4         | Database not in `active` state           | Wait for database to become active before deploying         |
-| 124       | `tasks wait` timed out                   | Increase `--timeout` or check task status manually          |
-| 1 (task)  | Deployment task failed                   | Read `error` field in task JSON; retry Step 4               |
+| Exit Code | Meaning | Recovery |
+|-----------|---------|----------|
+| 0 | Success | Continue to next step |
+| 1 | General error (invalid flags, API errors, constraints) | Check command output for details; verify flags and `pipeline.json` path |
+| 2 | Authentication failure | Run `pgecloudctl auth login` |
+| 3 | Request timeout | Retry the command; check network connectivity |
+| 4 | Resource not found (database/cluster) | Verify `<db-id>` with `pgecloudctl databases list` |

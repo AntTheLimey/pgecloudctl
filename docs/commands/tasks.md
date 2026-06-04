@@ -30,7 +30,7 @@ pgecloudctl tasks list --status running
 
 **Example output (table):**
 
-```
+```text
 ID                                    KIND              STATUS     SUBJECT ID                            CREATED
 b0c1d2e3-f4a5-6789-bcde-890123456789  cluster.create    running    a1b2c3d4-e5f6-7890-abcd-ef1234567890   2026-06-04T12:00:00Z
 c1d2e3f4-a5b6-7890-cdef-901234567890  database.create   succeeded  f6a7b8c9-d0e1-2345-fabc-456789012345   2026-06-04T11:30:00Z
@@ -58,7 +58,7 @@ pgecloudctl tasks get b0c1d2e3-f4a5-6789-bcde-890123456789
 
 **Example output (table):**
 
-```
+```text
 FIELD         VALUE
 ID            b0c1d2e3-f4a5-6789-bcde-890123456789
 Kind          cluster.create
@@ -96,7 +96,7 @@ pgecloudctl tasks wait b0c1d2e3-f4a5-6789-bcde-890123456789 \
 
 **Example output (table):**
 
-```
+```text
 Waiting for task b0c1d2e3-f4a5-6789-bcde-890123456789...
 Task succeeded.
 ```

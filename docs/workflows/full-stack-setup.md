@@ -105,11 +105,14 @@ Capture `result.id` (or `resource_id`) as `<db-id>`.
 
 Skip this step if MCP is not required.
 
+> **Security note:** Use environment variables for API keys to avoid
+> exposing them in shell history.
+
 ```bash
 pgecloudctl databases mcp deploy <db-id> \
   --embedding-provider openai \
   --embedding-model text-embedding-3-small \
-  --embedding-api-key <openai-api-key> \
+  --embedding-api-key "$OPENAI_API_KEY" \
   -o json
 ```
 
@@ -131,10 +134,10 @@ the [deploy-rag workflow](deploy-rag.md) for a sample config).
 pgecloudctl databases rag deploy <db-id> \
   --embedding-llm-provider openai \
   --embedding-llm-model text-embedding-3-small \
-  --embedding-llm-api-key <openai-api-key> \
+  --embedding-llm-api-key "$OPENAI_API_KEY" \
   --completion-llm-provider openai \
   --completion-llm-model gpt-4o \
-  --completion-llm-api-key <openai-api-key> \
+  --completion-llm-api-key "$OPENAI_API_KEY" \
   --pipeline-config pipeline.json \
   -o json
 ```
@@ -197,11 +200,10 @@ Expected output: at least one service with `status: active`.
 
 ## Error Handling
 
-| Exit Code | Meaning                                    | Recovery                                              |
-|-----------|--------------------------------------------|-------------------------------------------------------|
-| 1         | Authentication failure                     | Run `pgecloudctl auth login` and retry                |
-| 2         | Invalid or missing flag                    | Check flag names and required values; re-run step     |
-| 3         | Cloud account not found                    | Verify `--cloud-account-id` with `cloud-accounts list`|
-| 4         | Region not available                       | Check supported regions in the pgEdge Cloud UI        |
-| 124       | `tasks wait` timed out                     | Increase `--timeout` or check task status manually    |
-| 1 (task)  | Task failed (returned in JSON `"error"`)   | Read `error` field; delete the resource and retry     |
+| Exit Code | Meaning | Recovery |
+|-----------|---------|----------|
+| 0 | Success | Continue to next step |
+| 1 | General error (invalid flags, API errors, constraints) | Check command output for details; verify flags and resource state |
+| 2 | Authentication failure | Run `pgecloudctl auth login` |
+| 3 | Request timeout | Retry the command; check network connectivity |
+| 4 | Resource not found | Verify IDs with the relevant `list` command |

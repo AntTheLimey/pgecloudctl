@@ -25,7 +25,7 @@ pgecloudctl memberships list
 
 **Example output (table):**
 
-```
+```text
 ID                                    EMAIL                  ROLE     JOINED
 f8a9b0c1-d2e3-4567-fabc-678901234567  alice@example.com      admin    2026-01-15T09:00:00Z
 a9b0c1d2-e3f4-5678-abcd-789012345678  bob@example.com        member   2026-03-01T10:00:00Z
@@ -54,6 +54,6 @@ pgecloudctl memberships delete a9b0c1d2-e3f4-5678-abcd-789012345678 --yes
 
 **Example output (table):**
 
-```
+```text
 Membership a9b0c1d2-e3f4-5678-abcd-789012345678 deleted.
 ```

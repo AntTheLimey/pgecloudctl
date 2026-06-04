@@ -69,10 +69,10 @@ Expected output: the new member's email appears in the membership list with an
 
 ## Error Handling
 
-| Exit Code | Meaning                                  | Recovery                                                          |
-|-----------|------------------------------------------|-------------------------------------------------------------------|
-| 1         | Insufficient permissions                 | Confirm the authenticated account has org admin role              |
-| 2         | Invalid email format                     | Correct the email address and re-run Step 1                       |
-| 3         | Invite not found                         | Verify `<invite-id>` with `pgecloudctl invites list`              |
-| 4         | Invite expired                           | Create a new invite with `pgecloudctl invites create`             |
-| 5         | Invalid or already-used token            | Re-issue the invite; tokens are single-use                        |
+| Exit Code | Meaning | Recovery |
+|-----------|---------|----------|
+| 0 | Success | Continue to next step |
+| 1 | General error (validation, expired invite, token issue) | Check command output for details; re-create invite if needed |
+| 2 | Authentication/authorization failure | Confirm the account has org admin role; run `auth login` if needed |
+| 3 | Request timeout | Retry the command; check network connectivity |
+| 4 | Invite not found | Verify invite ID with `pgecloudctl invites list` |

@@ -8,7 +8,7 @@ broken to help diagnose the problem.
 
 ## Usage
 
-```
+```text
 pgecloudctl doctor [flags]
 ```
 
@@ -43,7 +43,7 @@ pgecloudctl doctor
 
 **Example output (table):**
 
-```
+```text
 CHECK             STATUS    DETAILS
 Version           ok        v0.3.0 (go1.22.3, darwin/arm64)
 Latest version    ok        v0.3.0 (up to date)

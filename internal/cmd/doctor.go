@@ -259,20 +259,36 @@ func checkSkill() skillInfo {
 	}
 
 	for _, dir := range candidates {
-		skillPath := filepath.Join(dir, "SKILL.md")
-		if _, err := os.Stat(skillPath); err != nil {
+		skillPaths := []string{
+			filepath.Join(dir, "skills", "pgecloudctl", "SKILL.md"),
+			filepath.Join(dir, "SKILL.md"),
+		}
+		found := false
+		for _, sp := range skillPaths {
+			if _, err := os.Stat(sp); err == nil {
+				found = true
+				break
+			}
+		}
+		if !found {
 			continue
 		}
 
 		info := skillInfo{Installed: true}
 
-		pluginJSON := filepath.Join(dir, "plugin.json")
-		if data, err := os.ReadFile(pluginJSON); err == nil {
-			var meta struct {
-				Version string `json:"version"`
-			}
-			if err := json.Unmarshal(data, &meta); err == nil && meta.Version != "" {
-				info.Version = meta.Version
+		pluginPaths := []string{
+			filepath.Join(dir, ".claude-plugin", "plugin.json"),
+			filepath.Join(dir, "plugin.json"),
+		}
+		for _, pp := range pluginPaths {
+			if data, err := os.ReadFile(pp); err == nil {
+				var meta struct {
+					Version string `json:"version"`
+				}
+				if err := json.Unmarshal(data, &meta); err == nil && meta.Version != "" {
+					info.Version = meta.Version
+				}
+				break
 			}
 		}
 

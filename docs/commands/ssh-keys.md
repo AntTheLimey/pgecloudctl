@@ -24,7 +24,7 @@ pgecloudctl ssh-keys list
 
 **Example output (table):**
 
-```
+```text
 ID                                    NAME          CREATED
 a3b4c5d6-e7f8-9012-abcd-123456789012  deploy-key    2026-01-20T14:00:00Z
 b4c5d6e7-f8a9-0123-bcde-234567890123  laptop-key    2026-02-05T10:30:00Z
@@ -52,7 +52,7 @@ pgecloudctl ssh-keys get a3b4c5d6-e7f8-9012-abcd-123456789012
 
 **Example output (table):**
 
-```
+```text
 FIELD       VALUE
 ID          a3b4c5d6-e7f8-9012-abcd-123456789012
 Name        deploy-key
@@ -86,7 +86,7 @@ pgecloudctl ssh-keys create \
 
 **Example output (table):**
 
-```
+```text
 FIELD     VALUE
 ID        a3b4c5d6-e7f8-9012-abcd-123456789012
 Name      deploy-key
@@ -116,6 +116,6 @@ pgecloudctl ssh-keys delete a3b4c5d6-e7f8-9012-abcd-123456789012 --yes
 
 **Example output (table):**
 
-```
+```text
 SSH key a3b4c5d6-e7f8-9012-abcd-123456789012 deleted.
 ```

@@ -309,4 +309,3 @@ type inviteRow struct {
 func (r inviteRow) Columns() []string {
 	return []string{r.id, r.email, r.invitedBy, r.team, r.expiresAt, r.createdAt}
 }
-

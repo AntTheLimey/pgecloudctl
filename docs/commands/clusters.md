@@ -27,7 +27,7 @@ pgecloudctl clusters list --limit 20
 
 **Example output (table):**
 
-```
+```text
 ID                                    NAME          STATUS    REGIONS
 a1b2c3d4-e5f6-7890-abcd-ef1234567890  prod-cluster  active    us-east-1,eu-west-1
 b2c3d4e5-f6a7-8901-bcde-f12345678901  dev-cluster   active    us-west-2
@@ -55,7 +55,7 @@ pgecloudctl clusters get a1b2c3d4-e5f6-7890-abcd-ef1234567890
 
 **Example output (table):**
 
-```
+```text
 FIELD               VALUE
 ID                  a1b2c3d4-e5f6-7890-abcd-ef1234567890
 Name                prod-cluster
@@ -96,7 +96,7 @@ pgecloudctl clusters create \
 
 **Example output (table):**
 
-```
+```text
 FIELD               VALUE
 ID                  a1b2c3d4-e5f6-7890-abcd-ef1234567890
 Name                prod-cluster
@@ -126,7 +126,7 @@ pgecloudctl clusters delete a1b2c3d4-e5f6-7890-abcd-ef1234567890 --yes
 
 **Example output (table):**
 
-```
+```text
 Cluster a1b2c3d4-e5f6-7890-abcd-ef1234567890 deleted.
 ```
 
@@ -156,7 +156,7 @@ pgecloudctl clusters shares list a1b2c3d4-e5f6-7890-abcd-ef1234567890
 
 **Example output (table):**
 
-```
+```text
 ID                                    NAME        TENANCY     CAPACITY
 d4e5f6a7-b8c9-0123-defa-234567890123  shared-s1   same        10
 e5f6a7b8-c9d0-1234-efab-345678901234  shared-s2   allowlist   5
@@ -186,7 +186,7 @@ pgecloudctl clusters shares get \
 
 **Example output (table):**
 
-```
+```text
 FIELD              VALUE
 ID                 d4e5f6a7-b8c9-0123-defa-234567890123
 Name               shared-s1
@@ -224,7 +224,7 @@ pgecloudctl clusters shares create a1b2c3d4-e5f6-7890-abcd-ef1234567890 \
 
 **Example output (table):**
 
-```
+```text
 FIELD     VALUE
 ID        d4e5f6a7-b8c9-0123-defa-234567890123
 Name      shared-s1
@@ -258,6 +258,6 @@ pgecloudctl clusters shares delete \
 
 **Example output (table):**
 
-```
+```text
 Share d4e5f6a7-b8c9-0123-defa-234567890123 deleted.
 ```

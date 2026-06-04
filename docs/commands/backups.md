@@ -32,7 +32,7 @@ pgecloudctl backups list \
 
 **Example output (table):**
 
-```
+```text
 ID                                    NAME          KIND    STATUS     CREATED
 c9d0e1f2-a3b4-5678-cdef-789012345678  nightly-bk1   full    complete   2026-06-01T02:00:00Z
 d0e1f2a3-b4c5-6789-defa-890123456789  nightly-bk2   full    complete   2026-06-02T02:00:00Z
@@ -60,7 +60,7 @@ pgecloudctl backups get c9d0e1f2-a3b4-5678-cdef-789012345678
 
 **Example output (table):**
 
-```
+```text
 FIELD        VALUE
 ID           c9d0e1f2-a3b4-5678-cdef-789012345678
 Name         nightly-bk1
@@ -101,7 +101,7 @@ pgecloudctl backups create \
 
 **Example output (table):**
 
-```
+```text
 FIELD        VALUE
 ID           e1f2a3b4-c5d6-7890-efab-901234567890
 Name         pre-migration
@@ -132,7 +132,7 @@ pgecloudctl backups delete c9d0e1f2-a3b4-5678-cdef-789012345678 --yes
 
 **Example output (table):**
 
-```
+```text
 Backup c9d0e1f2-a3b4-5678-cdef-789012345678 deleted.
 ```
 
@@ -158,7 +158,7 @@ pgecloudctl backups url c9d0e1f2-a3b4-5678-cdef-789012345678
 
 **Example output (table):**
 
-```
+```text
 URL
 https://backups.pgedge.com/c9d0e1f2-a3b4-5678-cdef-789012345678/download?token=eyJhbGc...
 ```

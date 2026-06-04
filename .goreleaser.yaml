@@ -29,6 +29,8 @@ archives:
 
 checksum:
   name_template: 'checksums.txt'
+  extra_files:
+    - glob: dist/*_skill.tar.gz
 
 changelog:
   sort: asc

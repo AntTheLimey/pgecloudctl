@@ -100,8 +100,11 @@ if [ -d "$CLAUDE_DIR" ]; then
 
     if curl -fsSL -o "${TMPDIR}/${SKILL_ARCHIVE}" "$SKILL_URL" 2>/dev/null; then
         mkdir -p "$PLUGIN_DIR"
-        tar -xzf "${TMPDIR}/${SKILL_ARCHIVE}" -C "$PLUGIN_DIR"
-        echo "Claude Code skill installed to ${PLUGIN_DIR}"
+        if tar -xzf "${TMPDIR}/${SKILL_ARCHIVE}" -C "$PLUGIN_DIR"; then
+            echo "Claude Code skill installed to ${PLUGIN_DIR}"
+        else
+            echo "Warning: skill archive extraction failed. Binary remains installed." >&2
+        fi
     else
         echo "Warning: could not download skill archive. Skill not installed." >&2
     fi

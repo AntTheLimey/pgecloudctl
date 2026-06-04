@@ -41,11 +41,14 @@ ingress steps are needed.
 
 ### Step 3: Deploy MCP
 
+> **Security note:** Use environment variables for API keys to avoid
+> exposing them in shell history.
+
 ```bash
 pgecloudctl databases mcp deploy <db-id> \
   --embedding-provider <provider> \
   --embedding-model <model> \
-  --embedding-api-key <api-key> \
+  --embedding-api-key "$OPENAI_API_KEY" \
   -o json
 ```
 
@@ -126,10 +129,10 @@ Expected output: an MCP service entry with `"status": "active"`.
 
 ## Error Handling
 
-| Exit Code | Meaning                                  | Recovery                                                |
-|-----------|------------------------------------------|---------------------------------------------------------|
-| 1         | Database not found or not accessible     | Verify `<db-id>` with `pgecloudctl databases list`      |
-| 2         | Invalid or missing flag                  | Check required flags and re-run Step 3                  |
-| 4         | Database not in `active` state           | Wait for database to become active before deploying     |
-| 124       | `tasks wait` timed out                   | Increase `--timeout` or check task status manually      |
-| 1 (task)  | Deployment task failed                   | Read `error` field in task JSON; retry Step 3           |
+| Exit Code | Meaning | Recovery |
+|-----------|---------|----------|
+| 0 | Success | Continue to next step |
+| 1 | General error (invalid flags, API errors, constraints) | Check command output for details; verify flags and resource state |
+| 2 | Authentication failure | Run `pgecloudctl auth login` |
+| 3 | Request timeout | Retry the command; check network connectivity |
+| 4 | Resource not found (database/cluster) | Verify `<db-id>` with `pgecloudctl databases list` |

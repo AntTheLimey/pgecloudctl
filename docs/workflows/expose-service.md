@@ -84,10 +84,10 @@ Expected output: the registered service appears in the list with
 
 ## Error Handling
 
-| Exit Code | Meaning                                     | Recovery                                                    |
-|-----------|---------------------------------------------|-------------------------------------------------------------|
-| 1         | Database or service not found               | Verify IDs with `databases list` and `databases services list` |
-| 2         | Invalid or missing flag                     | Check `--cluster-id`, `--region`, `--database-id`, `--service-id` |
-| 3         | Ingress already exists for this cluster     | Use existing ingress ID; skip Step 3                        |
-| 4         | Service not in a registerable state         | Ensure the service deployment task completed successfully   |
-| 1 (task)  | Ingress creation task failed                | Read `error` field; verify region availability and retry    |
+| Exit Code | Meaning | Recovery |
+|-----------|---------|----------|
+| 0 | Success | Continue to next step |
+| 1 | General error (invalid flags, constraints) | Check command output for details; verify flags and resource state |
+| 2 | Authentication failure | Run `pgecloudctl auth login` |
+| 3 | Request timeout | Retry the command; check network connectivity |
+| 4 | Resource not found (database/service/ingress) | Verify IDs with `databases list` and `databases services list` |

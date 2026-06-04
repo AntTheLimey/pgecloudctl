@@ -29,7 +29,7 @@ pgecloudctl auth login \
 
 **Example output (table):**
 
-```
+```text
 Logged in successfully.
 ```
 
@@ -55,7 +55,7 @@ pgecloudctl auth status
 
 **Example output (table):**
 
-```
+```text
 AUTHENTICATED    SOURCE    EXPIRES
 true             config    2026-12-31T23:59:59Z
 ```
@@ -82,6 +82,6 @@ pgecloudctl auth logout
 
 **Example output (table):**
 
-```
+```text
 Logged out successfully.
 ```

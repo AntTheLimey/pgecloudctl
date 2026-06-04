@@ -25,7 +25,7 @@ pgecloudctl cloud-accounts list
 
 **Example output (table):**
 
-```
+```text
 ID                                    NAME          TYPE    STATUS
 c3d4e5f6-a7b8-9012-cdef-123456789012  prod-aws      aws     active
 d4e5f6a7-b8c9-0123-defa-234567890123  prod-azure    azure   active
@@ -53,7 +53,7 @@ pgecloudctl cloud-accounts get c3d4e5f6-a7b8-9012-cdef-123456789012
 
 **Example output (table):**
 
-```
+```text
 FIELD         VALUE
 ID            c3d4e5f6-a7b8-9012-cdef-123456789012
 Name          prod-aws
@@ -112,7 +112,7 @@ pgecloudctl cloud-accounts create \
 
 **Example output (table):**
 
-```
+```text
 FIELD     VALUE
 ID        c3d4e5f6-a7b8-9012-cdef-123456789012
 Name      prod-aws
@@ -143,7 +143,7 @@ pgecloudctl cloud-accounts delete c3d4e5f6-a7b8-9012-cdef-123456789012 --yes
 
 **Example output (table):**
 
-```
+```text
 Cloud account c3d4e5f6-a7b8-9012-cdef-123456789012 deleted.
 ```
 
@@ -171,7 +171,7 @@ pgecloudctl cloud-accounts cloudformation-template
 
 **Example output:**
 
-```
+```yaml
 AWSTemplateFormatVersion: "2010-09-09"
 Description: pgEdge Cloud IAM role
 Resources:
