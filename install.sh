@@ -89,3 +89,23 @@ mv "${TMPDIR}/${BINARY}" "${INSTALL_DIR}/${BINARY}"
 chmod +x "${INSTALL_DIR}/${BINARY}"
 
 echo "Installed ${BINARY} ${VERSION} to ${INSTALL_DIR}/${BINARY}"
+
+# Install Claude Code skill if Claude Code is detected
+CLAUDE_DIR="${HOME}/.claude"
+if [ -d "$CLAUDE_DIR" ]; then
+    echo "Claude Code detected. Installing pgecloudctl skill..."
+    SKILL_ARCHIVE="${BINARY}_${VERSION_NUM}_skill.tar.gz"
+    SKILL_URL="https://github.com/${REPO}/releases/download/${VERSION}/${SKILL_ARCHIVE}"
+    PLUGIN_DIR="${CLAUDE_DIR}/plugins/${BINARY}"
+
+    if curl -fsSL -o "${TMPDIR}/${SKILL_ARCHIVE}" "$SKILL_URL" 2>/dev/null; then
+        mkdir -p "$PLUGIN_DIR"
+        tar -xzf "${TMPDIR}/${SKILL_ARCHIVE}" -C "$PLUGIN_DIR"
+        echo "Claude Code skill installed to ${PLUGIN_DIR}"
+    else
+        echo "Warning: could not download skill archive. Skill not installed." >&2
+    fi
+else
+    echo "Claude Code not detected — skill not installed."
+    echo "Install Claude Code and re-run to enable AI integration."
+fi

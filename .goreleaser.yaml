@@ -1,5 +1,9 @@
 version: 2
 
+before:
+  hooks:
+    - tar -czf dist/pgecloudctl_{{ .Version }}_skill.tar.gz .claude-plugin/ skills/
+
 builds:
   - main: ./cmd/pgecloudctl
     binary: pgecloudctl
@@ -46,3 +50,7 @@ brews:
       bin.install "pgecloudctl"
     test: |
       system "#{bin}/pgecloudctl", "version"
+
+release:
+  extra_files:
+    - glob: dist/*_skill.tar.gz
