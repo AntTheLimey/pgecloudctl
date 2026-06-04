@@ -25,7 +25,7 @@ func newTestClient(t *testing.T, handler http.HandlerFunc) *api.ClientWithRespon
 func nodesHandler(nodes []api.ClusterNode) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(nodes)
+		_ = json.NewEncoder(w).Encode(nodes)
 	}
 }
 
