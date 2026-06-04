@@ -1,0 +1,33 @@
+# pgecloudctl
+
+> CLI for managing pgEdge Cloud resources. Supports table, JSON,
+> and YAML output. Designed for both human operators and AI agents.
+
+## Commands
+
+- [Auth](docs/commands/auth.md): login, status, logout
+- [Clusters](docs/commands/clusters.md): list, get, create, delete, shares
+- [Databases](docs/commands/databases.md): list, get, create, update, delete, services, mcp, rag
+- [Backups](docs/commands/backups.md): list, get, create, delete, url
+- [Backup Stores](docs/commands/backup-stores.md): list, get, create, delete
+- [SSH Keys](docs/commands/ssh-keys.md): list, get, create, delete
+- [Ingresses](docs/commands/ingresses.md): list, get, create, delete, services
+- [Invites](docs/commands/invites.md): list, get, create, delete, accept
+- [Memberships](docs/commands/memberships.md): list, delete
+- [Tasks](docs/commands/tasks.md): list, get, wait
+- [Cloud Accounts](docs/commands/cloud-accounts.md): list, get, create, delete, cloudformation-template
+- [Doctor](docs/commands/doctor.md): environment diagnostics
+
+## Workflows
+
+- [Full Stack Setup](docs/workflows/full-stack-setup.md): backup store, cluster, firewall, database, services, ingress
+- [Deploy MCP](docs/workflows/deploy-mcp.md): MCP server on existing database
+- [Deploy RAG](docs/workflows/deploy-rag.md): RAG server with pipeline config
+- [Expose Service](docs/workflows/expose-service.md): ingress and service registration
+- [Team Onboarding](docs/workflows/team-onboarding.md): invite, accept, verify
+
+## Reference
+
+- [OpenAPI Spec](openapi/pgedge.yaml): Full API specification
+- [README](README.md): Installation and quick start
+- [ROADMAP](ROADMAP.md): Feature roadmap
