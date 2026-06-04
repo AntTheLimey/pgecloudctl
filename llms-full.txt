@@ -1,0 +1,2560 @@
+# pgecloudctl — Complete Reference
+
+> CLI for managing pgEdge Cloud resources. Supports table, JSON, and YAML
+> output. Designed for both human operators and AI agents.
+
+## Installation
+
+### Homebrew
+
+    brew install AntTheLimey/tap/pgecloudctl
+
+### Script
+
+    curl -fsSL https://raw.githubusercontent.com/AntTheLimey/pgecloudctl/main/install.sh | sh
+
+### Go
+
+    go install github.com/AntTheLimey/pgecloudctl@latest
+
+## Authentication
+
+Three sources (priority order):
+
+1. Environment variables: PGEDGE_CLIENT_ID + PGEDGE_CLIENT_SECRET
+2. CLI flags: --client-id + --client-secret
+3. Config file: ~/.pgecloudctl/config.json (set by `auth login`)
+
+## Global Flags
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `--api-url` | API base URL | `https://api.pgedge.com` |
+| `-o, --output` | Output format: table, json, yaml | `table` |
+| `--no-color` | Disable color output | |
+| `-v, --verbose` | Show HTTP request/response details | |
+| `--client-id` | API client ID (overrides config) | |
+| `--client-secret` | API client secret (overrides config) | |
+
+## Exit Codes
+
+| Code | Meaning |
+|------|---------|
+| 0 | Success |
+| 1 | General error |
+| 2 | Auth failure |
+| 3 | Timeout |
+| 4 | Not found |
+
+## Commands
+
+---
+
+### auth
+
+Manage authentication credentials for pgEdge Cloud.
+
+#### auth login
+
+Authenticate with pgEdge Cloud using a client ID and secret. Credentials
+can be passed via `--client-id` / `--client-secret` flags or the
+`PGEDGE_CLIENT_ID` / `PGEDGE_CLIENT_SECRET` environment variables.
+A token is fetched and cached in the config directory.
+
+**Usage:** `pgecloudctl auth login [flags]`
+
+**Flags:**
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `-h, --help` | No | help for login |
+
+**Example:**
+
+```bash
+pgecloudctl auth login \
+    --client-id my-client-id \
+    --client-secret my-client-secret
+```
+
+**Example output (table):**
+
+```
+Logged in successfully.
+```
+
+---
+
+#### auth status
+
+Show current authentication state, including token source and expiry.
+
+**Usage:** `pgecloudctl auth status [flags]`
+
+**Flags:**
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `-h, --help` | No | help for status |
+
+**Example:**
+
+```bash
+pgecloudctl auth status
+```
+
+**Example output (table):**
+
+```
+AUTHENTICATED    SOURCE    EXPIRES
+true             config    2026-12-31T23:59:59Z
+```
+
+---
+
+#### auth logout
+
+Clear stored credentials and cached tokens from the config directory.
+
+**Usage:** `pgecloudctl auth logout [flags]`
+
+**Flags:**
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `-h, --help` | No | help for logout |
+
+**Example:**
+
+```bash
+pgecloudctl auth logout
+```
+
+**Example output (table):**
+
+```
+Logged out successfully.
+```
+
+---
+
+### clusters
+
+Manage pgEdge Cloud clusters, including multi-region node groups and
+cluster shares for multi-tenant deployments.
+
+#### clusters list
+
+List all clusters in the current tenant.
+
+**Usage:** `pgecloudctl clusters list [flags]`
+
+**Flags:**
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `--limit int` | No | Maximum number of results to return |
+| `--offset int` | No | Offset into the results for pagination |
+| `-h, --help` | No | help for list |
+
+**Example:**
+
+```bash
+pgecloudctl clusters list --limit 20
+```
+
+**Example output (table):**
+
+```
+ID                                    NAME          STATUS    REGIONS
+a1b2c3d4-e5f6-7890-abcd-ef1234567890  prod-cluster  active    us-east-1,eu-west-1
+b2c3d4e5-f6a7-8901-bcde-f12345678901  dev-cluster   active    us-west-2
+```
+
+---
+
+#### clusters get
+
+Get details for a specific cluster.
+
+**Usage:** `pgecloudctl clusters get <id> [flags]`
+
+**Flags:**
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `-h, --help` | No | help for get |
+
+**Example:**
+
+```bash
+pgecloudctl clusters get a1b2c3d4-e5f6-7890-abcd-ef1234567890
+```
+
+**Example output (table):**
+
+```
+FIELD               VALUE
+ID                  a1b2c3d4-e5f6-7890-abcd-ef1234567890
+Name                prod-cluster
+Status              active
+Node location       public
+Regions             us-east-1, eu-west-1
+Cloud account ID    c3d4e5f6-a7b8-9012-cdef-123456789012
+Created             2026-01-15T10:00:00Z
+```
+
+---
+
+#### clusters create
+
+Create a new cluster across one or more cloud regions.
+
+**Usage:** `pgecloudctl clusters create [flags]`
+
+**Flags:**
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `--name string` | Yes | Cluster name |
+| `--cloud-account-id string` | Yes | Cloud account ID |
+| `--regions strings` | Yes | Comma-separated list of regions |
+| `--node-location string` | Yes | Node location (public or private) |
+| `-h, --help` | No | help for create |
+
+**Example:**
+
+```bash
+pgecloudctl clusters create \
+    --name prod-cluster \
+    --cloud-account-id c3d4e5f6-a7b8-9012-cdef-123456789012 \
+    --regions us-east-1,eu-west-1 \
+    --node-location public
+```
+
+**Example output (table):**
+
+```
+FIELD               VALUE
+ID                  a1b2c3d4-e5f6-7890-abcd-ef1234567890
+Name                prod-cluster
+Status              creating
+```
+
+---
+
+#### clusters delete
+
+Delete a cluster by ID.
+
+**Usage:** `pgecloudctl clusters delete <id> [flags]`
+
+**Flags:**
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `-y, --yes` | No | Skip confirmation prompt |
+| `-h, --help` | No | help for delete |
+
+**Example:**
+
+```bash
+pgecloudctl clusters delete a1b2c3d4-e5f6-7890-abcd-ef1234567890 --yes
+```
+
+**Example output (table):**
+
+```
+Cluster a1b2c3d4-e5f6-7890-abcd-ef1234567890 deleted.
+```
+
+---
+
+#### clusters shares list
+
+List all shares belonging to a cluster.
+
+**Usage:** `pgecloudctl clusters shares list <cluster-id> [flags]`
+
+**Flags:**
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `-h, --help` | No | help for list |
+
+**Example:**
+
+```bash
+pgecloudctl clusters shares list a1b2c3d4-e5f6-7890-abcd-ef1234567890
+```
+
+**Example output (table):**
+
+```
+ID                                    NAME        TENANCY     CAPACITY
+d4e5f6a7-b8c9-0123-defa-234567890123  shared-s1   same        10
+e5f6a7b8-c9d0-1234-efab-345678901234  shared-s2   allowlist   5
+```
+
+---
+
+#### clusters shares get
+
+Get details for a specific cluster share.
+
+**Usage:** `pgecloudctl clusters shares get <cluster-id> <share-id> [flags]`
+
+**Flags:**
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `-h, --help` | No | help for get |
+
+**Example:**
+
+```bash
+pgecloudctl clusters shares get \
+    a1b2c3d4-e5f6-7890-abcd-ef1234567890 \
+    d4e5f6a7-b8c9-0123-defa-234567890123
+```
+
+**Example output (table):**
+
+```
+FIELD              VALUE
+ID                 d4e5f6a7-b8c9-0123-defa-234567890123
+Name               shared-s1
+Tenancy            same
+Capacity           10
+Allowed tenants
+```
+
+---
+
+#### clusters shares create
+
+Create a new share on a cluster.
+
+**Usage:** `pgecloudctl clusters shares create <cluster-id> [flags]`
+
+**Flags:**
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `--name string` | Yes | Share name |
+| `--tenancy string` | Yes | Tenancy mode: same or allowlist |
+| `--capacity int` | No | Share capacity |
+| `--allowed-tenants strings` | No | Allowed tenant IDs (for allowlist tenancy) |
+| `-h, --help` | No | help for create |
+
+**Example:**
+
+```bash
+pgecloudctl clusters shares create a1b2c3d4-e5f6-7890-abcd-ef1234567890 \
+    --name shared-s1 \
+    --tenancy same \
+    --capacity 10
+```
+
+**Example output (table):**
+
+```
+FIELD     VALUE
+ID        d4e5f6a7-b8c9-0123-defa-234567890123
+Name      shared-s1
+Tenancy   same
+Capacity  10
+```
+
+---
+
+#### clusters shares delete
+
+Delete a cluster share by ID.
+
+**Usage:** `pgecloudctl clusters shares delete <cluster-id> <share-id> [flags]`
+
+**Flags:**
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `-y, --yes` | No | Skip confirmation prompt |
+| `-h, --help` | No | help for delete |
+
+**Example:**
+
+```bash
+pgecloudctl clusters shares delete \
+    a1b2c3d4-e5f6-7890-abcd-ef1234567890 \
+    d4e5f6a7-b8c9-0123-defa-234567890123 \
+    --yes
+```
+
+**Example output (table):**
+
+```
+Share d4e5f6a7-b8c9-0123-defa-234567890123 deleted.
+```
+
+---
+
+### databases
+
+Manage pgEdge Cloud databases, along with MCP servers, RAG servers, and
+other services deployed alongside them.
+
+#### databases list
+
+List databases, optionally filtered to a specific cluster.
+
+**Usage:** `pgecloudctl databases list [flags]`
+
+**Flags:**
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `--cluster-id string` | No | Filter by cluster ID |
+| `--limit int` | No | Maximum number of results to return |
+| `--offset int` | No | Offset into the results for pagination |
+| `-h, --help` | No | help for list |
+
+**Example:**
+
+```bash
+pgecloudctl databases list \
+    --cluster-id a1b2c3d4-e5f6-7890-abcd-ef1234567890
+```
+
+**Example output (table):**
+
+```
+ID                                    NAME      PG VERSION    STATUS    CLUSTER
+f6a7b8c9-d0e1-2345-fabc-456789012345  mydb      16            active    a1b2c3d4-e5f6-7890-abcd-ef1234567890
+```
+
+---
+
+#### databases get
+
+Get details for a specific database.
+
+**Usage:** `pgecloudctl databases get <id> [flags]`
+
+**Flags:**
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `-h, --help` | No | help for get |
+
+**Example:**
+
+```bash
+pgecloudctl databases get f6a7b8c9-d0e1-2345-fabc-456789012345
+```
+
+**Example output (table):**
+
+```
+FIELD         VALUE
+ID            f6a7b8c9-d0e1-2345-fabc-456789012345
+Name          mydb
+Display name  My Production DB
+PG version    16
+Status        active
+Cluster ID    a1b2c3d4-e5f6-7890-abcd-ef1234567890
+Created       2026-02-01T09:00:00Z
+```
+
+---
+
+#### databases create
+
+Create a new PostgreSQL database on an existing cluster.
+
+**Usage:** `pgecloudctl databases create [flags]`
+
+**Flags:**
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `--name string` | Yes | Database name |
+| `--cluster-id string` | Yes | Cluster ID to deploy the database on |
+| `--pg-version string` | Yes | PostgreSQL version (e.g. 16) |
+| `-h, --help` | No | help for create |
+
+**Example:**
+
+```bash
+pgecloudctl databases create \
+    --name mydb \
+    --cluster-id a1b2c3d4-e5f6-7890-abcd-ef1234567890 \
+    --pg-version 16
+```
+
+**Example output (table):**
+
+```
+FIELD       VALUE
+ID          f6a7b8c9-d0e1-2345-fabc-456789012345
+Name        mydb
+PG version  16
+Status      creating
+```
+
+---
+
+#### databases update
+
+Update mutable properties of an existing database.
+
+**Usage:** `pgecloudctl databases update <id> [flags]`
+
+**Flags:**
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `--display-name string` | No | Display name for the database |
+| `--options strings` | No | Comma-separated list of options |
+| `-h, --help` | No | help for update |
+
+**Example:**
+
+```bash
+pgecloudctl databases update f6a7b8c9-d0e1-2345-fabc-456789012345 \
+    --display-name "My Production DB"
+```
+
+**Example output (table):**
+
+```
+Database f6a7b8c9-d0e1-2345-fabc-456789012345 updated.
+```
+
+---
+
+#### databases delete
+
+Delete a database by ID.
+
+**Usage:** `pgecloudctl databases delete <id> [flags]`
+
+**Flags:**
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `-y, --yes` | No | Skip confirmation prompt |
+| `-h, --help` | No | help for delete |
+
+**Example:**
+
+```bash
+pgecloudctl databases delete f6a7b8c9-d0e1-2345-fabc-456789012345 --yes
+```
+
+**Example output (table):**
+
+```
+Database f6a7b8c9-d0e1-2345-fabc-456789012345 deleted.
+```
+
+---
+
+#### databases services list
+
+List all services deployed on a database.
+
+**Usage:** `pgecloudctl databases services list <db-id> [flags]`
+
+**Flags:**
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `-h, --help` | No | help for list |
+
+**Example:**
+
+```bash
+pgecloudctl databases services list f6a7b8c9-d0e1-2345-fabc-456789012345
+```
+
+**Example output (table):**
+
+```
+ID                                    TYPE    STATUS
+a7b8c9d0-e1f2-3456-abcd-567890123456  mcp     active
+b8c9d0e1-f2a3-4567-bcde-678901234567  rag     active
+```
+
+---
+
+#### databases services get
+
+Get details of a specific service deployed on a database.
+
+**Usage:** `pgecloudctl databases services get <db-id> <service-id> [flags]`
+
+**Flags:**
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `-h, --help` | No | help for get |
+
+**Example:**
+
+```bash
+pgecloudctl databases services get \
+    f6a7b8c9-d0e1-2345-fabc-456789012345 \
+    a7b8c9d0-e1f2-3456-abcd-567890123456
+```
+
+**Example output (table):**
+
+```
+FIELD     VALUE
+ID        a7b8c9d0-e1f2-3456-abcd-567890123456
+Type      mcp
+Status    active
+Endpoint  https://mcp.a7b8c9d0.pgedge.io
+```
+
+---
+
+#### databases services remove
+
+Remove a service type (mcp or rag) from a database.
+
+**Usage:** `pgecloudctl databases services remove <db-id> <type> [flags]`
+
+**Flags:**
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `-h, --help` | No | help for remove |
+
+**Example:**
+
+```bash
+pgecloudctl databases services remove \
+    f6a7b8c9-d0e1-2345-fabc-456789012345 \
+    mcp
+```
+
+**Example output (table):**
+
+```
+Service mcp removed from database f6a7b8c9-d0e1-2345-fabc-456789012345.
+```
+
+---
+
+#### databases mcp deploy
+
+Deploy an MCP server alongside an existing database. The MCP server exposes
+a Model Context Protocol endpoint that AI agents can connect to for
+structured database access.
+
+**Usage:** `pgecloudctl databases mcp deploy <db-id> [flags]`
+
+**Flags:**
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `--allow-writes` | No | Grant the MCP service read-write access (WARNING: allows LLM to modify data) |
+| `--embedding-provider string` | No | Embedding provider: ollama, openai, or voyage |
+| `--embedding-model string` | No | Embedding model identifier (required when --embedding-provider is set) |
+| `--embedding-api-key string` | No | API key for the embedding provider (required for openai and voyage) |
+| `--ollama-url string` | No | Endpoint URL for an Ollama server (required when --embedding-provider is ollama) |
+| `--target-nodes strings` | No | Ordered list of database node names the MCP service connects to |
+| `--init-tokens string` | No | Bearer token forwarded to the MCP server as INIT_TOKENS |
+| `--init-users string` | No | Comma-separated username:password pairs forwarded as INIT_USERS |
+| `-h, --help` | No | help for deploy |
+
+**Example:**
+
+```bash
+pgecloudctl databases mcp deploy f6a7b8c9-d0e1-2345-fabc-456789012345 \
+    --embedding-provider openai \
+    --embedding-model text-embedding-3-small \
+    --embedding-api-key sk-proj-abc123
+```
+
+**Example output (table):**
+
+```
+FIELD     VALUE
+ID        a7b8c9d0-e1f2-3456-abcd-567890123456
+Type      mcp
+Status    deploying
+Endpoint  https://mcp.a7b8c9d0.pgedge.io
+```
+
+---
+
+#### databases mcp update
+
+Update the MCP server configuration on a database. Accepts the same flags
+as `mcp deploy`.
+
+**Usage:** `pgecloudctl databases mcp update <db-id> [flags]`
+
+**Flags:**
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `--allow-writes` | No | Grant the MCP service read-write access (WARNING: allows LLM to modify data) |
+| `--embedding-provider string` | No | Embedding provider: ollama, openai, or voyage |
+| `--embedding-model string` | No | Embedding model identifier (required when --embedding-provider is set) |
+| `--embedding-api-key string` | No | API key for the embedding provider (required for openai and voyage) |
+| `--ollama-url string` | No | Endpoint URL for an Ollama server (required when --embedding-provider is ollama) |
+| `--target-nodes strings` | No | Ordered list of database node names the MCP service connects to |
+| `--init-tokens string` | No | Bearer token forwarded to the MCP server as INIT_TOKENS |
+| `--init-users string` | No | Comma-separated username:password pairs forwarded as INIT_USERS |
+| `-h, --help` | No | help for update |
+
+**Example:**
+
+```bash
+pgecloudctl databases mcp update f6a7b8c9-d0e1-2345-fabc-456789012345 \
+    --allow-writes \
+    --target-nodes node1,node2
+```
+
+**Example output (table):**
+
+```
+MCP service updated on database f6a7b8c9-d0e1-2345-fabc-456789012345.
+```
+
+---
+
+#### databases rag deploy
+
+Deploy a RAG server (Ellie) alongside an existing database. The RAG server
+provides retrieval-augmented generation pipelines backed by pgvector.
+
+**Usage:** `pgecloudctl databases rag deploy <db-id> [flags]`
+
+**Flags:**
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `--embedding-llm-provider string` | No | Embedding LLM provider (e.g. openai, voyage) |
+| `--embedding-llm-model string` | No | Embedding LLM model identifier |
+| `--embedding-llm-api-key string` | No | API key for the embedding LLM provider |
+| `--completion-llm-provider string` | No | Completion LLM provider (e.g. openai) |
+| `--completion-llm-model string` | No | Completion LLM model identifier |
+| `--completion-llm-api-key string` | No | API key for the completion LLM provider |
+| `--pipeline-config string` | No | Path to a JSON file containing pipeline definitions |
+| `--target-nodes strings` | No | Ordered list of database node names the RAG service connects to |
+| `--top-n int` | No | Default number of results to retrieve per pipeline |
+| `--token-budget int` | No | Default max completion tokens across all pipelines |
+| `-h, --help` | No | help for deploy |
+
+**Example:**
+
+```bash
+pgecloudctl databases rag deploy f6a7b8c9-d0e1-2345-fabc-456789012345 \
+    --embedding-llm-provider openai \
+    --embedding-llm-model text-embedding-3-small \
+    --embedding-llm-api-key sk-proj-abc123 \
+    --completion-llm-provider openai \
+    --completion-llm-model gpt-4o \
+    --completion-llm-api-key sk-proj-abc123 \
+    --top-n 5 \
+    --token-budget 2048
+```
+
+**Example output (table):**
+
+```
+FIELD     VALUE
+ID        b8c9d0e1-f2a3-4567-bcde-678901234567
+Type      rag
+Status    deploying
+Endpoint  https://rag.b8c9d0e1.pgedge.io
+```
+
+---
+
+#### databases rag update
+
+Update the RAG server configuration on a database. Accepts the same flags
+as `rag deploy`.
+
+**Usage:** `pgecloudctl databases rag update <db-id> [flags]`
+
+**Flags:**
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `--embedding-llm-provider string` | No | Embedding LLM provider (e.g. openai, voyage) |
+| `--embedding-llm-model string` | No | Embedding LLM model identifier |
+| `--embedding-llm-api-key string` | No | API key for the embedding LLM provider |
+| `--completion-llm-provider string` | No | Completion LLM provider (e.g. openai) |
+| `--completion-llm-model string` | No | Completion LLM model identifier |
+| `--completion-llm-api-key string` | No | API key for the completion LLM provider |
+| `--pipeline-config string` | No | Path to a JSON file containing pipeline definitions |
+| `--target-nodes strings` | No | Ordered list of database node names the RAG service connects to |
+| `--top-n int` | No | Default number of results to retrieve per pipeline |
+| `--token-budget int` | No | Default max completion tokens across all pipelines |
+| `-h, --help` | No | help for update |
+
+**Example:**
+
+```bash
+pgecloudctl databases rag update f6a7b8c9-d0e1-2345-fabc-456789012345 \
+    --top-n 10 \
+    --token-budget 4096
+```
+
+**Example output (table):**
+
+```
+RAG service updated on database f6a7b8c9-d0e1-2345-fabc-456789012345.
+```
+
+---
+
+### backups
+
+Manage pgEdge Cloud backups for databases.
+
+#### backups list
+
+List backups, with optional filters by database, kind, and time range.
+
+**Usage:** `pgecloudctl backups list [flags]`
+
+**Flags:**
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `--database-id string` | No | Filter backups to a specific database ID |
+| `--kind string` | No | Filter backups to a specific kind |
+| `--created-after string` | No | Filter: created after this RFC3339 timestamp |
+| `--created-before string` | No | Filter: created before this RFC3339 timestamp |
+| `--limit int` | No | Maximum number of results to return |
+| `--offset int` | No | Offset into the results for pagination |
+| `-h, --help` | No | help for list |
+
+**Example:**
+
+```bash
+pgecloudctl backups list \
+    --database-id f6a7b8c9-d0e1-2345-fabc-456789012345 \
+    --created-after 2026-01-01T00:00:00Z
+```
+
+**Example output (table):**
+
+```
+ID                                    NAME          KIND    STATUS     CREATED
+c9d0e1f2-a3b4-5678-cdef-789012345678  nightly-bk1   full    complete   2026-06-01T02:00:00Z
+d0e1f2a3-b4c5-6789-defa-890123456789  nightly-bk2   full    complete   2026-06-02T02:00:00Z
+```
+
+---
+
+#### backups get
+
+Get details for a specific backup.
+
+**Usage:** `pgecloudctl backups get <id> [flags]`
+
+**Flags:**
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `-h, --help` | No | help for get |
+
+**Example:**
+
+```bash
+pgecloudctl backups get c9d0e1f2-a3b4-5678-cdef-789012345678
+```
+
+**Example output (table):**
+
+```
+FIELD        VALUE
+ID           c9d0e1f2-a3b4-5678-cdef-789012345678
+Name         nightly-bk1
+Kind         full
+Status       complete
+Database ID  f6a7b8c9-d0e1-2345-fabc-456789012345
+Provider     s3
+Created      2026-06-01T02:00:00Z
+```
+
+---
+
+#### backups create
+
+Create a new on-demand backup for a database.
+
+**Usage:** `pgecloudctl backups create [flags]`
+
+**Flags:**
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `--database-id string` | Yes | Database ID to back up |
+| `--provider string` | No | Backup provider |
+| `--name string` | No | Optional backup name |
+| `--type string` | No | Optional backup type |
+| `--target-nodes strings` | No | Comma-separated list of target nodes |
+| `-h, --help` | No | help for create |
+
+**Example:**
+
+```bash
+pgecloudctl backups create \
+    --database-id f6a7b8c9-d0e1-2345-fabc-456789012345 \
+    --name pre-migration \
+    --provider s3
+```
+
+**Example output (table):**
+
+```
+FIELD        VALUE
+ID           e1f2a3b4-c5d6-7890-efab-901234567890
+Name         pre-migration
+Status       running
+Database ID  f6a7b8c9-d0e1-2345-fabc-456789012345
+```
+
+---
+
+#### backups delete
+
+Delete a backup by ID.
+
+**Usage:** `pgecloudctl backups delete <id> [flags]`
+
+**Flags:**
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `-y, --yes` | No | Skip confirmation prompt |
+| `-h, --help` | No | help for delete |
+
+**Example:**
+
+```bash
+pgecloudctl backups delete c9d0e1f2-a3b4-5678-cdef-789012345678 --yes
+```
+
+**Example output (table):**
+
+```
+Backup c9d0e1f2-a3b4-5678-cdef-789012345678 deleted.
+```
+
+---
+
+#### backups url
+
+Get a time-limited download URL for a completed backup.
+
+**Usage:** `pgecloudctl backups url <id> [flags]`
+
+**Flags:**
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `-h, --help` | No | help for url |
+
+**Example:**
+
+```bash
+pgecloudctl backups url c9d0e1f2-a3b4-5678-cdef-789012345678
+```
+
+**Example output (table):**
+
+```
+URL
+https://backups.pgedge.com/c9d0e1f2-a3b4-5678-cdef-789012345678/download?token=eyJhbGc...
+```
+
+---
+
+### backup-stores
+
+Manage pgEdge Cloud backup stores — the remote storage targets where
+database backups are written.
+
+#### backup-stores list
+
+List all backup stores, with optional time-range filters.
+
+**Usage:** `pgecloudctl backup-stores list [flags]`
+
+**Flags:**
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `--created-after string` | No | Filter: created after this RFC3339 timestamp |
+| `--created-before string` | No | Filter: created before this RFC3339 timestamp |
+| `--limit int` | No | Maximum number of results to return |
+| `--offset int` | No | Offset into the results for pagination |
+| `-h, --help` | No | help for list |
+
+**Example:**
+
+```bash
+pgecloudctl backup-stores list
+```
+
+**Example output (table):**
+
+```
+ID                                    NAME          REGION       CLOUD ACCOUNT
+f2a3b4c5-d6e7-8901-fabc-012345678901  primary-bkp   us-east-1    c3d4e5f6-a7b8-9012-cdef-123456789012
+```
+
+---
+
+#### backup-stores get
+
+Get details for a specific backup store.
+
+**Usage:** `pgecloudctl backup-stores get <id> [flags]`
+
+**Flags:**
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `-h, --help` | No | help for get |
+
+**Example:**
+
+```bash
+pgecloudctl backup-stores get f2a3b4c5-d6e7-8901-fabc-012345678901
+```
+
+**Example output (table):**
+
+```
+FIELD             VALUE
+ID                f2a3b4c5-d6e7-8901-fabc-012345678901
+Name              primary-bkp
+Region            us-east-1
+Cloud account ID  c3d4e5f6-a7b8-9012-cdef-123456789012
+Created           2026-01-10T08:00:00Z
+```
+
+---
+
+#### backup-stores create
+
+Create a new backup store in a specific cloud region.
+
+**Usage:** `pgecloudctl backup-stores create [flags]`
+
+**Flags:**
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `--name string` | Yes | Backup store name |
+| `--cloud-account-id string` | Yes | Cloud account ID |
+| `--region string` | Yes | Region for the backup store |
+| `-h, --help` | No | help for create |
+
+**Example:**
+
+```bash
+pgecloudctl backup-stores create \
+    --name primary-bkp \
+    --cloud-account-id c3d4e5f6-a7b8-9012-cdef-123456789012 \
+    --region us-east-1
+```
+
+**Example output (table):**
+
+```
+FIELD     VALUE
+ID        f2a3b4c5-d6e7-8901-fabc-012345678901
+Name      primary-bkp
+Region    us-east-1
+Status    creating
+```
+
+---
+
+#### backup-stores delete
+
+Delete a backup store by ID.
+
+**Usage:** `pgecloudctl backup-stores delete <id> [flags]`
+
+**Flags:**
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `-y, --yes` | No | Skip confirmation prompt |
+| `-h, --help` | No | help for delete |
+
+**Example:**
+
+```bash
+pgecloudctl backup-stores delete f2a3b4c5-d6e7-8901-fabc-012345678901 --yes
+```
+
+**Example output (table):**
+
+```
+Backup store f2a3b4c5-d6e7-8901-fabc-012345678901 deleted.
+```
+
+---
+
+### ssh-keys
+
+Manage SSH public keys registered with pgEdge Cloud for node access.
+
+#### ssh-keys list
+
+List all SSH keys in the current tenant.
+
+**Usage:** `pgecloudctl ssh-keys list [flags]`
+
+**Flags:**
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `-h, --help` | No | help for list |
+
+**Example:**
+
+```bash
+pgecloudctl ssh-keys list
+```
+
+**Example output (table):**
+
+```
+ID                                    NAME          CREATED
+a3b4c5d6-e7f8-9012-abcd-123456789012  deploy-key    2026-01-20T14:00:00Z
+b4c5d6e7-f8a9-0123-bcde-234567890123  laptop-key    2026-02-05T10:30:00Z
+```
+
+---
+
+#### ssh-keys get
+
+Get details for a specific SSH key.
+
+**Usage:** `pgecloudctl ssh-keys get <id> [flags]`
+
+**Flags:**
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `-h, --help` | No | help for get |
+
+**Example:**
+
+```bash
+pgecloudctl ssh-keys get a3b4c5d6-e7f8-9012-abcd-123456789012
+```
+
+**Example output (table):**
+
+```
+FIELD       VALUE
+ID          a3b4c5d6-e7f8-9012-abcd-123456789012
+Name        deploy-key
+Public key  ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI... deploy@ci
+Created     2026-01-20T14:00:00Z
+```
+
+---
+
+#### ssh-keys create
+
+Register a new SSH public key.
+
+**Usage:** `pgecloudctl ssh-keys create [flags]`
+
+**Flags:**
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `--name string` | Yes | SSH key name |
+| `--public-key string` | Yes | SSH public key value |
+| `-h, --help` | No | help for create |
+
+**Example:**
+
+```bash
+pgecloudctl ssh-keys create \
+    --name deploy-key \
+    --public-key "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI... deploy@ci"
+```
+
+**Example output (table):**
+
+```
+FIELD     VALUE
+ID        a3b4c5d6-e7f8-9012-abcd-123456789012
+Name      deploy-key
+Created   2026-01-20T14:00:00Z
+```
+
+---
+
+#### ssh-keys delete
+
+Delete an SSH key by ID.
+
+**Usage:** `pgecloudctl ssh-keys delete <id> [flags]`
+
+**Flags:**
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `-y, --yes` | No | Skip confirmation prompt |
+| `-h, --help` | No | help for delete |
+
+**Example:**
+
+```bash
+pgecloudctl ssh-keys delete a3b4c5d6-e7f8-9012-abcd-123456789012 --yes
+```
+
+**Example output (table):**
+
+```
+SSH key a3b4c5d6-e7f8-9012-abcd-123456789012 deleted.
+```
+
+---
+
+### ingresses
+
+Manage pgEdge Cloud ingresses — regional load balancers that route external
+traffic to database services such as the MCP or RAG server.
+
+#### ingresses list
+
+List all ingresses, with optional time-range filters.
+
+**Usage:** `pgecloudctl ingresses list [flags]`
+
+**Flags:**
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `--created-after string` | No | Filter: created after this RFC3339 timestamp |
+| `--created-before string` | No | Filter: created before this RFC3339 timestamp |
+| `--limit int` | No | Maximum number of results to return |
+| `--offset int` | No | Offset into the results for pagination |
+| `-h, --help` | No | help for list |
+
+**Example:**
+
+```bash
+pgecloudctl ingresses list
+```
+
+**Example output (table):**
+
+```
+ID                                    NAME          REGION       CLUSTER                                STATUS
+c5d6e7f8-a9b0-1234-cdef-345678901234  prod-ingress  us-east-1    a1b2c3d4-e5f6-7890-abcd-ef1234567890   active
+```
+
+---
+
+#### ingresses get
+
+Get details for a specific ingress.
+
+**Usage:** `pgecloudctl ingresses get <id> [flags]`
+
+**Flags:**
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `-h, --help` | No | help for get |
+
+**Example:**
+
+```bash
+pgecloudctl ingresses get c5d6e7f8-a9b0-1234-cdef-345678901234
+```
+
+**Example output (table):**
+
+```
+FIELD       VALUE
+ID          c5d6e7f8-a9b0-1234-cdef-345678901234
+Name        prod-ingress
+Region      us-east-1
+Cluster ID  a1b2c3d4-e5f6-7890-abcd-ef1234567890
+Status      active
+Hostname    prod-ingress.c5d6e7f8.pgedge.io
+Created     2026-02-10T11:00:00Z
+```
+
+---
+
+#### ingresses create
+
+Create a new ingress in a specific region, associated with a cluster.
+
+**Usage:** `pgecloudctl ingresses create [flags]`
+
+**Flags:**
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `--name string` | Yes | Ingress name |
+| `--cluster-id string` | Yes | Cluster ID to associate with the ingress |
+| `--region string` | Yes | Cloud region for the ingress |
+| `-h, --help` | No | help for create |
+
+**Example:**
+
+```bash
+pgecloudctl ingresses create \
+    --name prod-ingress \
+    --cluster-id a1b2c3d4-e5f6-7890-abcd-ef1234567890 \
+    --region us-east-1
+```
+
+**Example output (table):**
+
+```
+FIELD     VALUE
+ID        c5d6e7f8-a9b0-1234-cdef-345678901234
+Name      prod-ingress
+Region    us-east-1
+Status    creating
+```
+
+---
+
+#### ingresses delete
+
+Delete an ingress by ID.
+
+**Usage:** `pgecloudctl ingresses delete <id> [flags]`
+
+**Flags:**
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `-y, --yes` | No | Skip confirmation prompt |
+| `-h, --help` | No | help for delete |
+
+**Example:**
+
+```bash
+pgecloudctl ingresses delete c5d6e7f8-a9b0-1234-cdef-345678901234 --yes
+```
+
+**Example output (table):**
+
+```
+Ingress c5d6e7f8-a9b0-1234-cdef-345678901234 deleted.
+```
+
+---
+
+#### ingresses services list
+
+List all services registered on a specific ingress.
+
+**Usage:** `pgecloudctl ingresses services list <ingress-id> [flags]`
+
+**Flags:**
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `-h, --help` | No | help for list |
+
+**Example:**
+
+```bash
+pgecloudctl ingresses services list c5d6e7f8-a9b0-1234-cdef-345678901234
+```
+
+**Example output (table):**
+
+```
+SERVICE ID                            DATABASE ID                           TYPE
+a7b8c9d0-e1f2-3456-abcd-567890123456  f6a7b8c9-d0e1-2345-fabc-456789012345  mcp
+```
+
+---
+
+#### ingresses services register
+
+Register a database service on an ingress to expose it externally.
+
+**Usage:** `pgecloudctl ingresses services register <ingress-id> [flags]`
+
+**Flags:**
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `--database-id string` | Yes | Database ID to register |
+| `--service-id string` | Yes | Service ID to expose |
+| `-h, --help` | No | help for register |
+
+**Example:**
+
+```bash
+pgecloudctl ingresses services register c5d6e7f8-a9b0-1234-cdef-345678901234 \
+    --database-id f6a7b8c9-d0e1-2345-fabc-456789012345 \
+    --service-id a7b8c9d0-e1f2-3456-abcd-567890123456
+```
+
+**Example output (table):**
+
+```
+Service a7b8c9d0-e1f2-3456-abcd-567890123456 registered on ingress c5d6e7f8-a9b0-1234-cdef-345678901234.
+```
+
+---
+
+#### ingresses services deregister
+
+Deregister a service from an ingress.
+
+**Usage:** `pgecloudctl ingresses services deregister <ingress-id> <service-id> [flags]`
+
+**Flags:**
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `-h, --help` | No | help for deregister |
+
+**Example:**
+
+```bash
+pgecloudctl ingresses services deregister \
+    c5d6e7f8-a9b0-1234-cdef-345678901234 \
+    a7b8c9d0-e1f2-3456-abcd-567890123456
+```
+
+**Example output (table):**
+
+```
+Service a7b8c9d0-e1f2-3456-abcd-567890123456 deregistered from ingress c5d6e7f8-a9b0-1234-cdef-345678901234.
+```
+
+---
+
+### invites
+
+Manage pgEdge Cloud team invites — send, accept, and revoke invitations for
+new team members.
+
+#### invites list
+
+List all pending invites in the current tenant.
+
+**Usage:** `pgecloudctl invites list [flags]`
+
+**Flags:**
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `-h, --help` | No | help for list |
+
+**Example:**
+
+```bash
+pgecloudctl invites list
+```
+
+**Example output (table):**
+
+```
+ID                                    EMAIL                  STATUS     EXPIRES
+d6e7f8a9-b0c1-2345-defa-456789012345  alice@example.com      pending    2026-06-10T00:00:00Z
+e7f8a9b0-c1d2-3456-efab-567890123456  bob@example.com        pending    2026-06-15T00:00:00Z
+```
+
+---
+
+#### invites get
+
+Get details for a specific invite.
+
+**Usage:** `pgecloudctl invites get <id> [flags]`
+
+**Flags:**
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `-h, --help` | No | help for get |
+
+**Example:**
+
+```bash
+pgecloudctl invites get d6e7f8a9-b0c1-2345-defa-456789012345
+```
+
+**Example output (table):**
+
+```
+FIELD    VALUE
+ID       d6e7f8a9-b0c1-2345-defa-456789012345
+Email    alice@example.com
+Status   pending
+Expires  2026-06-10T00:00:00Z
+Created  2026-06-03T09:00:00Z
+```
+
+---
+
+#### invites create
+
+Create and send a new invite to an email address.
+
+**Usage:** `pgecloudctl invites create [flags]`
+
+**Flags:**
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `--email string` | Yes | Email address to invite |
+| `--expiration int` | No | Invite expiration in hours (optional) |
+| `-h, --help` | No | help for create |
+
+**Example:**
+
+```bash
+pgecloudctl invites create \
+    --email alice@example.com \
+    --expiration 168
+```
+
+**Example output (table):**
+
+```
+FIELD    VALUE
+ID       d6e7f8a9-b0c1-2345-defa-456789012345
+Email    alice@example.com
+Status   pending
+Expires  2026-06-10T00:00:00Z
+```
+
+---
+
+#### invites delete
+
+Delete (revoke) a pending invite by ID.
+
+**Usage:** `pgecloudctl invites delete <id> [flags]`
+
+**Flags:**
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `-y, --yes` | No | Skip confirmation prompt |
+| `-h, --help` | No | help for delete |
+
+**Example:**
+
+```bash
+pgecloudctl invites delete d6e7f8a9-b0c1-2345-defa-456789012345 --yes
+```
+
+**Example output (table):**
+
+```
+Invite d6e7f8a9-b0c1-2345-defa-456789012345 deleted.
+```
+
+---
+
+#### invites accept
+
+Accept an invite using its ID and token (typically used by the invitee).
+
+**Usage:** `pgecloudctl invites accept <id> [flags]`
+
+**Flags:**
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `--token string` | Yes | Invite token |
+| `-h, --help` | No | help for accept |
+
+**Example:**
+
+```bash
+pgecloudctl invites accept d6e7f8a9-b0c1-2345-defa-456789012345 \
+    --token inv_abc123xyz789
+```
+
+**Example output (table):**
+
+```
+Invite accepted. You have joined the team.
+```
+
+---
+
+### memberships
+
+Manage pgEdge Cloud team memberships — list current members and remove
+members from the tenant.
+
+#### memberships list
+
+List all current team memberships in the tenant.
+
+**Usage:** `pgecloudctl memberships list [flags]`
+
+**Flags:**
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `-h, --help` | No | help for list |
+
+**Example:**
+
+```bash
+pgecloudctl memberships list
+```
+
+**Example output (table):**
+
+```
+ID                                    EMAIL                  ROLE     JOINED
+f8a9b0c1-d2e3-4567-fabc-678901234567  alice@example.com      admin    2026-01-15T09:00:00Z
+a9b0c1d2-e3f4-5678-abcd-789012345678  bob@example.com        member   2026-03-01T10:00:00Z
+```
+
+---
+
+#### memberships delete
+
+Remove a team member from the tenant by their membership ID.
+
+**Usage:** `pgecloudctl memberships delete <id> [flags]`
+
+**Flags:**
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `-y, --yes` | No | Skip confirmation prompt |
+| `-h, --help` | No | help for delete |
+
+**Example:**
+
+```bash
+pgecloudctl memberships delete a9b0c1d2-e3f4-5678-abcd-789012345678 --yes
+```
+
+**Example output (table):**
+
+```
+Membership a9b0c1d2-e3f4-5678-abcd-789012345678 deleted.
+```
+
+---
+
+### tasks
+
+Manage pgEdge Cloud tasks — long-running asynchronous operations such as
+cluster creation, database provisioning, and service deployments.
+
+#### tasks list
+
+List tasks, with optional filters by status, subject ID, and subject kind.
+
+**Usage:** `pgecloudctl tasks list [flags]`
+
+**Flags:**
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `--status string` | No | Filter by status (queued, running, succeeded, failed) |
+| `--subject-id string` | No | Filter by subject ID |
+| `--subject-kind string` | No | Filter by subject kind |
+| `--limit int` | No | Maximum number of results to return |
+| `--offset int` | No | Offset into the results for pagination |
+| `-h, --help` | No | help for list |
+
+**Example:**
+
+```bash
+pgecloudctl tasks list --status running
+```
+
+**Example output (table):**
+
+```
+ID                                    KIND              STATUS     SUBJECT ID                            CREATED
+b0c1d2e3-f4a5-6789-bcde-890123456789  cluster.create    running    a1b2c3d4-e5f6-7890-abcd-ef1234567890   2026-06-04T12:00:00Z
+c1d2e3f4-a5b6-7890-cdef-901234567890  database.create   succeeded  f6a7b8c9-d0e1-2345-fabc-456789012345   2026-06-04T11:30:00Z
+```
+
+---
+
+#### tasks get
+
+Get details for a specific task, including logs and error messages.
+
+**Usage:** `pgecloudctl tasks get <id> [flags]`
+
+**Flags:**
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `-h, --help` | No | help for get |
+
+**Example:**
+
+```bash
+pgecloudctl tasks get b0c1d2e3-f4a5-6789-bcde-890123456789
+```
+
+**Example output (table):**
+
+```
+FIELD         VALUE
+ID            b0c1d2e3-f4a5-6789-bcde-890123456789
+Kind          cluster.create
+Status        running
+Subject ID    a1b2c3d4-e5f6-7890-abcd-ef1234567890
+Subject kind  cluster
+Created       2026-06-04T12:00:00Z
+Updated       2026-06-04T12:01:30Z
+```
+
+---
+
+#### tasks wait
+
+Poll a task until it reaches a terminal state (succeeded or failed).
+Exits with code 0 on success, 1 on failure, and 3 on timeout.
+
+**Usage:** `pgecloudctl tasks wait <id> [flags]`
+
+**Flags:**
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `--timeout int` | No | Maximum seconds to wait for task completion (default 300) |
+| `--interval int` | No | Polling interval in seconds (default 5) |
+| `-h, --help` | No | help for wait |
+
+**Example:**
+
+```bash
+pgecloudctl tasks wait b0c1d2e3-f4a5-6789-bcde-890123456789 \
+    --timeout 600 \
+    --interval 10
+```
+
+**Example output (table):**
+
+```
+Waiting for task b0c1d2e3-f4a5-6789-bcde-890123456789...
+Task succeeded.
+```
+
+---
+
+### cloud-accounts
+
+Manage pgEdge Cloud accounts — the AWS, Azure, or GCP credentials that
+pgEdge Cloud uses to provision infrastructure in your cloud. Alias: `ca`.
+
+#### cloud-accounts list
+
+List all cloud accounts registered in the current tenant.
+
+**Usage:** `pgecloudctl cloud-accounts list [flags]`
+
+**Flags:**
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `-h, --help` | No | help for list |
+
+**Example:**
+
+```bash
+pgecloudctl cloud-accounts list
+```
+
+**Example output (table):**
+
+```
+ID                                    NAME          TYPE    STATUS
+c3d4e5f6-a7b8-9012-cdef-123456789012  prod-aws      aws     active
+d4e5f6a7-b8c9-0123-defa-234567890123  prod-azure    azure   active
+```
+
+---
+
+#### cloud-accounts get
+
+Get details for a specific cloud account.
+
+**Usage:** `pgecloudctl cloud-accounts get <id> [flags]`
+
+**Flags:**
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `-h, --help` | No | help for get |
+
+**Example:**
+
+```bash
+pgecloudctl cloud-accounts get c3d4e5f6-a7b8-9012-cdef-123456789012
+```
+
+**Example output (table):**
+
+```
+FIELD         VALUE
+ID            c3d4e5f6-a7b8-9012-cdef-123456789012
+Name          prod-aws
+Type          aws
+Role ARN      arn:aws:iam::123456789012:role/pgEdgeCloudRole
+Status        active
+Description   Production AWS account
+Created       2026-01-05T08:00:00Z
+```
+
+---
+
+#### cloud-accounts create
+
+Register a new cloud account for AWS, Azure, or GCP. Required flags depend
+on the cloud provider specified with `--type`.
+
+**Usage:** `pgecloudctl cloud-accounts create [flags]`
+
+**Flags:**
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `--name string` | Yes | Display name for the cloud account |
+| `--type string` | Yes | Cloud provider type: aws, azure, or gcp |
+| `--description string` | No | Optional description |
+| `--role-arn string` | aws | AWS IAM Role ARN (required for --type aws) |
+| `--project-id string` | gcp | GCP project ID (required for --type gcp) |
+| `--service-account string` | gcp | GCP service account email (required for --type gcp) |
+| `--azure-client-id string` | azure | Azure client/application ID (required for --type azure) |
+| `--azure-client-secret string` | azure | Azure client secret (required for --type azure) |
+| `--subscription-id string` | azure | Azure subscription ID (required for --type azure) |
+| `--tenant-id string` | azure | Azure tenant ID (required for --type azure) |
+| `--resource-group string` | No | Azure resource group (optional for --type azure) |
+| `-h, --help` | No | help for create |
+
+**Example (AWS):**
+
+```bash
+pgecloudctl cloud-accounts create \
+    --name prod-aws \
+    --type aws \
+    --role-arn arn:aws:iam::123456789012:role/pgEdgeCloudRole \
+    --description "Production AWS account"
+```
+
+**Example (GCP):**
+
+```bash
+pgecloudctl cloud-accounts create \
+    --name prod-gcp \
+    --type gcp \
+    --project-id my-gcp-project-123 \
+    --service-account pgcloud@my-gcp-project-123.iam.gserviceaccount.com
+```
+
+**Example output (table):**
+
+```
+FIELD     VALUE
+ID        c3d4e5f6-a7b8-9012-cdef-123456789012
+Name      prod-aws
+Type      aws
+Status    active
+```
+
+---
+
+#### cloud-accounts delete
+
+Delete a cloud account by ID.
+
+**Usage:** `pgecloudctl cloud-accounts delete <id> [flags]`
+
+**Flags:**
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `-y, --yes` | No | Skip confirmation prompt |
+| `-h, --help` | No | help for delete |
+
+**Example:**
+
+```bash
+pgecloudctl cloud-accounts delete c3d4e5f6-a7b8-9012-cdef-123456789012 --yes
+```
+
+**Example output (table):**
+
+```
+Cloud account c3d4e5f6-a7b8-9012-cdef-123456789012 deleted.
+```
+
+---
+
+#### cloud-accounts cloudformation-template
+
+Print the AWS CloudFormation template used to create the IAM role that
+pgEdge Cloud requires. Apply this template in your AWS account before
+registering an AWS cloud account.
+
+**Usage:** `pgecloudctl cloud-accounts cloudformation-template [flags]`
+
+**Flags:**
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `-h, --help` | No | help for cloudformation-template |
+
+**Example:**
+
+```bash
+pgecloudctl cloud-accounts cloudformation-template
+```
+
+**Example output:**
+
+```
+AWSTemplateFormatVersion: "2010-09-09"
+Description: pgEdge Cloud IAM role
+Resources:
+  pgEdgeCloudRole:
+    Type: AWS::IAM::Role
+    Properties:
+      ...
+```
+
+---
+
+### doctor
+
+Run environment diagnostics to verify that `pgecloudctl` and its environment
+are configured correctly. Does not require authentication — run when auth is
+broken to diagnose the problem.
+
+**Usage:** `pgecloudctl doctor [flags]`
+
+**Flags:**
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `-h, --help` | No | help for doctor |
+
+**Checks:**
+
+`doctor` runs 9 checks and prints a status table. Each check reports `ok`,
+`warning`, or `error`.
+
+| Check | What it verifies |
+|-------|-----------------|
+| Version | Reports the current version, Go runtime, OS, and arch. Always `ok`. |
+| Latest version | Compares installed version against latest GitHub release. `warning` if newer version available. |
+| Auth | Checks config file or env var credentials and token expiry. `error` if no credentials found. |
+| API connectivity | HTTP GET to the configured API base URL; records status and latency. |
+| Config | Checks whether `config.json` and `token.json` exist in the config directory. |
+| Environment | Reports OS/arch and whether `PGEDGE_CLIENT_ID`, `PGEDGE_API_URL`, `NO_COLOR` are set. |
+| Shell | Detects current shell and checks whether `pgecloudctl` is on `$PATH`. |
+| Install method | Infers installation method from executable path: homebrew, install-script, go-install, or unknown. |
+| Skill | Checks whether the pgecloudctl Claude Code skill is installed in `~/.claude/plugins/pgecloudctl/`. |
+
+**Example:**
+
+```bash
+pgecloudctl doctor
+```
+
+**Example output (table):**
+
+```
+CHECK             STATUS    DETAILS
+Version           ok        v0.3.0 (go1.22.3, darwin/arm64)
+Latest version    ok        v0.3.0 (up to date)
+Auth              ok        authenticated via config (expires 2026-12-31T23:59:59Z)
+API connectivity  ok        https://api.pgedge.com (200, 87ms)
+Config            ok        /Users/alice/.config/pgecloudctl (config.json: yes, token.json: yes)
+Environment       ok        darwin/arm64, PGEDGE_CLIENT_ID: not set
+Shell             ok        /bin/zsh, in PATH
+Install method    ok        homebrew
+Skill             ok        installed (v0.3.0)
+```
+
+Use `-o json` or `-o yaml` for machine-readable output.
+
+---
+
+## Workflows
+
+---
+
+### Full Stack Setup
+
+End-to-end provisioning of a pgEdge Cloud cluster, database, and optional
+AI services from a clean slate.
+
+**Prerequisites:**
+
+- `pgecloudctl` authenticated
+- A cloud account ID (`pgecloudctl cloud-accounts list -o json`)
+- Target region string (e.g. `us-west-2`, `eastus`)
+- For MCP/RAG: embedding provider credentials
+- For RAG: a `pipeline.json` file on disk
+
+**Step 1: Verify authentication**
+
+```bash
+pgecloudctl auth status -o json
+```
+
+Expected: JSON with `"status": "authenticated"`. Abort on non-zero exit.
+
+**Step 2: Check for an existing backup store**
+
+```bash
+pgecloudctl backup-stores list -o json
+```
+
+If the array is non-empty, capture `id` from the first result and skip to
+Step 4.
+
+**Step 3: Create a backup store (if needed)**
+
+```bash
+pgecloudctl backup-stores create \
+  --name <backup-store-name> \
+  --cloud-account-id <cloud-account-id> \
+  --region <region> \
+  -o json
+```
+
+Capture `id` as `<backup-store-id>`.
+
+**Step 4: Create the cluster**
+
+```bash
+pgecloudctl clusters create \
+  --name <cluster-name> \
+  --cloud-account-id <cloud-account-id> \
+  --regions <region> \
+  --node-location <public|private> \
+  -o json
+```
+
+Capture `task_id` as `<cluster-task-id>`.
+
+**Step 5: Wait for cluster provisioning**
+
+```bash
+pgecloudctl tasks wait <cluster-task-id> -o json --timeout 600
+```
+
+Expected: JSON with `"status": "completed"`. Capture `result.id` as
+`<cluster-id>`.
+
+**Step 6: Configure firewall rules**
+
+Firewall rule management is not yet available in `pgecloudctl`. Use the
+pgEdge Cloud UI at `https://app.pgedge.com`, navigate to the cluster, and
+configure allowed CIDR ranges under **Network → Firewall**.
+
+**Step 7: Create the database**
+
+```bash
+pgecloudctl databases create \
+  --name <database-name> \
+  --cluster-id <cluster-id> \
+  -o json
+```
+
+Capture `task_id` as `<database-task-id>`.
+
+**Step 8: Wait for database provisioning**
+
+```bash
+pgecloudctl tasks wait <database-task-id> -o json --timeout 600
+```
+
+Capture `result.id` as `<db-id>`.
+
+**Step 9 (optional): Deploy MCP**
+
+```bash
+pgecloudctl databases mcp deploy <db-id> \
+  --embedding-provider openai \
+  --embedding-model text-embedding-3-small \
+  --embedding-api-key <openai-api-key> \
+  -o json
+```
+
+Capture `task_id` and wait:
+
+```bash
+pgecloudctl tasks wait <mcp-task-id> -o json --timeout 600
+```
+
+**Step 10 (optional): Deploy RAG**
+
+```bash
+pgecloudctl databases rag deploy <db-id> \
+  --embedding-llm-provider openai \
+  --embedding-llm-model text-embedding-3-small \
+  --embedding-llm-api-key <openai-api-key> \
+  --completion-llm-provider openai \
+  --completion-llm-model gpt-4o \
+  --completion-llm-api-key <openai-api-key> \
+  --pipeline-config pipeline.json \
+  -o json
+```
+
+Capture `task_id` and wait:
+
+```bash
+pgecloudctl tasks wait <rag-task-id> -o json --timeout 600
+```
+
+**Step 11 (private clusters only): Expose the service via ingress**
+
+Skip if `--node-location public` was used.
+
+```bash
+pgecloudctl databases services list <db-id> -o json
+```
+
+Capture the service `id` as `<service-id>`.
+
+```bash
+pgecloudctl ingresses create \
+  --name <ingress-name> \
+  --cluster-id <cluster-id> \
+  --region <region> \
+  -o json
+```
+
+Capture `id` as `<ingress-id>`.
+
+```bash
+pgecloudctl ingresses services register <ingress-id> \
+  --database-id <db-id> \
+  --service-id <service-id>
+```
+
+**Step 12: Verify**
+
+```bash
+pgecloudctl databases services list <db-id>
+```
+
+Expected: at least one service with `status: active`.
+
+**Error handling:**
+
+| Exit Code | Meaning | Recovery |
+|-----------|---------|----------|
+| 0 | Success | Continue to next step |
+| 1 | General error (invalid flags, constraints, task failure) | Check command output for details; verify flags and resource state |
+| 2 | Authentication failure | Run `pgecloudctl auth login` |
+| 3 | Request timeout | Increase `--timeout` or check task status manually |
+| 4 | Resource not found | Verify IDs with the corresponding `list` command |
+
+---
+
+### Deploy MCP
+
+Deploy the pgEdge MCP server onto an existing active database.
+
+**Prerequisites:**
+
+- An active database (`pgecloudctl databases get <db-id> -o json` returns
+  `"status": "active"`)
+- The database's parent cluster ID
+- Embedding provider credentials
+
+**Step 1: Verify database status**
+
+```bash
+pgecloudctl databases get <db-id> -o json
+```
+
+Expected: `"status": "active"`. Capture `cluster_id`. Abort if not active.
+
+**Step 2: Check cluster node location**
+
+```bash
+pgecloudctl clusters get <cluster-id> -o json
+```
+
+Capture `node_location` (`public` or `private`).
+
+**Step 3: Deploy MCP**
+
+```bash
+pgecloudctl databases mcp deploy <db-id> \
+  --embedding-provider <provider> \
+  --embedding-model <model> \
+  --embedding-api-key <api-key> \
+  -o json
+```
+
+Common provider/model combinations:
+
+| Provider | Model |
+|----------|-------|
+| openai | text-embedding-3-small |
+| openai | text-embedding-3-large |
+
+Optional flags:
+
+| Flag | Purpose |
+|------|---------|
+| `--allow-writes` | Permit INSERT/UPDATE/DELETE via the MCP server |
+| `--target-nodes` | Comma-separated list of node IDs to deploy on |
+| `--init-tokens` | Number of initial API tokens to create |
+| `--init-users` | Number of initial database users to create |
+| `--ollama-url` | Ollama endpoint URL (for self-hosted embeddings) |
+
+Capture `task_id` as `<mcp-task-id>`.
+
+**Step 4: Wait for deployment**
+
+```bash
+pgecloudctl tasks wait <mcp-task-id> -o json --timeout 600
+```
+
+Expected: `"status": "completed"`. Abort if `failed`.
+
+**Step 5 (private clusters only): Expose via ingress**
+
+```bash
+pgecloudctl databases services list <db-id> -o json
+```
+
+Capture MCP service `id` as `<service-id>`.
+
+```bash
+pgecloudctl ingresses create \
+  --name <ingress-name> \
+  --cluster-id <cluster-id> \
+  --region <region> \
+  -o json
+```
+
+Capture `id` as `<ingress-id>`.
+
+```bash
+pgecloudctl ingresses services register <ingress-id> \
+  --database-id <db-id> \
+  --service-id <service-id>
+```
+
+**Step 6: Verify**
+
+```bash
+pgecloudctl databases services list <db-id>
+```
+
+Expected: MCP service with `"status": "active"`.
+
+**Error handling:**
+
+| Exit Code | Meaning | Recovery |
+|-----------|---------|----------|
+| 0 | Success | Continue to next step |
+| 1 | General error (invalid flags, deployment failure) | Check command output for details |
+| 2 | Authentication failure | Run `pgecloudctl auth login` |
+| 3 | Request timeout | Increase `--timeout` or check task status manually |
+| 4 | Database not found | Verify `<db-id>` with `databases list` |
+
+---
+
+### Deploy RAG
+
+Deploy the pgEdge RAG server onto an existing active database.
+
+**Prerequisites:**
+
+- An active database
+- Embedding and completion LLM provider credentials
+- A `pipeline.json` configuration file on disk
+
+**Sample pipeline.json:**
+
+```json
+{
+  "pipelines": [
+    {
+      "name": "search",
+      "system_prompt": "Answer questions using the provided context.",
+      "hybrid_enabled": true,
+      "vector_weight": 0.5,
+      "tables": [
+        {
+          "table": "public.documents",
+          "text_column": "content",
+          "vector_column": "embedding"
+        }
+      ]
+    }
+  ]
+}
+```
+
+Adjust `table`, `text_column`, and `vector_column` to match your schema.
+
+**Step 1: Verify database status**
+
+```bash
+pgecloudctl databases get <db-id> -o json
+```
+
+Expected: `"status": "active"`. Capture `cluster_id`. Abort if not active.
+
+**Step 2: Check cluster node location**
+
+```bash
+pgecloudctl clusters get <cluster-id> -o json
+```
+
+Capture `node_location`.
+
+**Step 3: Prepare pipeline config**
+
+Confirm `pipeline.json` exists and contains at least one pipeline with valid
+table and column references.
+
+**Step 4: Deploy RAG**
+
+```bash
+pgecloudctl databases rag deploy <db-id> \
+  --embedding-llm-provider <provider> \
+  --embedding-llm-model <embedding-model> \
+  --embedding-llm-api-key <embedding-api-key> \
+  --completion-llm-provider <provider> \
+  --completion-llm-model <completion-model> \
+  --completion-llm-api-key <completion-api-key> \
+  --pipeline-config pipeline.json \
+  -o json
+```
+
+Common provider/model combinations:
+
+| Role | Provider | Model |
+|------|----------|-------|
+| Embedding | openai | text-embedding-3-small |
+| Embedding | openai | text-embedding-3-large |
+| Completion | openai | gpt-4o |
+| Completion | openai | gpt-4o-mini |
+
+Optional flags: `--token-budget`, `--top-n`, `--target-nodes`.
+
+Capture `task_id` as `<rag-task-id>`.
+
+**Step 5: Wait for deployment**
+
+```bash
+pgecloudctl tasks wait <rag-task-id> -o json --timeout 600
+```
+
+Expected: `"status": "completed"`. Abort if `failed`.
+
+**Step 6 (private clusters only): Expose via ingress**
+
+```bash
+pgecloudctl databases services list <db-id> -o json
+```
+
+Capture RAG service `id` as `<service-id>`.
+
+```bash
+pgecloudctl ingresses create \
+  --name <ingress-name> \
+  --cluster-id <cluster-id> \
+  --region <region> \
+  -o json
+```
+
+Capture `id` as `<ingress-id>`.
+
+```bash
+pgecloudctl ingresses services register <ingress-id> \
+  --database-id <db-id> \
+  --service-id <service-id>
+```
+
+**Step 7: Verify**
+
+```bash
+pgecloudctl databases services list <db-id>
+```
+
+Expected: RAG service with `"status": "active"`.
+
+**Error handling:**
+
+| Exit Code | Meaning | Recovery |
+|-----------|---------|----------|
+| 0 | Success | Continue to next step |
+| 1 | General error (invalid flags, bad pipeline config, deployment failure) | Check command output for details |
+| 2 | Authentication failure | Run `pgecloudctl auth login` |
+| 3 | Request timeout | Increase `--timeout` or check task status manually |
+| 4 | Database not found | Verify `<db-id>` with `databases list` |
+
+---
+
+### Expose Service
+
+Create an ingress and register a database service to make it reachable on a
+private cluster.
+
+**Prerequisites:**
+
+- A private cluster with at least one active database
+- The database ID (`<db-id>`)
+- At least one deployed service on the database (MCP, RAG, or other)
+
+**Step 1: List database services**
+
+```bash
+pgecloudctl databases services list <db-id> -o json
+```
+
+Capture the target service `id` as `<service-id>`.
+
+**Step 2: Get the cluster ID**
+
+```bash
+pgecloudctl databases get <db-id> -o json
+```
+
+Capture `cluster_id` as `<cluster-id>` and note the primary region.
+
+**Step 3: Create the ingress**
+
+Check whether an ingress already exists:
+
+```bash
+pgecloudctl ingresses list -o json
+```
+
+If none matches, create one:
+
+```bash
+pgecloudctl ingresses create \
+  --name <ingress-name> \
+  --cluster-id <cluster-id> \
+  --region <region> \
+  -o json
+```
+
+Capture `id` as `<ingress-id>`.
+
+**Step 4: Register the service**
+
+```bash
+pgecloudctl ingresses services register <ingress-id> \
+  --database-id <db-id> \
+  --service-id <service-id>
+```
+
+Repeat for each additional service. Exit code 0 = success.
+
+**Step 5: Verify**
+
+```bash
+pgecloudctl ingresses services list <ingress-id>
+```
+
+Expected: registered service with `"status": "registered"`.
+
+**Error handling:**
+
+| Exit Code | Meaning | Recovery |
+|-----------|---------|----------|
+| 0 | Success | Continue to next step |
+| 1 | General error (invalid flags, constraints) | Check command output for details; verify flags and resource state |
+| 2 | Authentication failure | Run `pgecloudctl auth login` |
+| 3 | Request timeout | Retry the command; check network connectivity |
+| 4 | Resource not found (database/service/ingress) | Verify IDs with `databases list` and `databases services list` |
+
+---
+
+### Team Onboarding
+
+Invite a new member to the pgEdge Cloud organization and confirm membership.
+
+**Prerequisites:**
+
+- Authenticated session with organization admin permissions
+- The new member's email address
+
+**Step 1: Create the invite**
+
+```bash
+pgecloudctl invites create --email user@example.com -o json
+```
+
+To set a custom expiration (in hours):
+
+```bash
+pgecloudctl invites create --email user@example.com --expiration 72 -o json
+```
+
+Capture `id` as `<invite-id>`, `token` as `<token>`, and note the invite URL.
+
+**Step 2: Share the invite URL**
+
+Send the invite URL to the new member. If they will accept via the pgEdge
+Cloud UI, skip to Step 4.
+
+**Step 3: Member accepts via CLI (optional)**
+
+```bash
+pgecloudctl invites accept <invite-id> --token <token>
+```
+
+Expected: confirmation message or `"status": "accepted"`.
+
+**Step 4: Verify membership**
+
+```bash
+pgecloudctl memberships list
+```
+
+Expected: new member's email in the list with `active` status.
+
+**Error handling:**
+
+| Exit Code | Meaning | Recovery |
+|-----------|---------|----------|
+| 0 | Success | Continue to next step |
+| 1 | General error (validation, expired invite, token issue) | Check command output for details; re-create invite if needed |
+| 2 | Authentication/authorization failure | Confirm the account has org admin role; run `auth login` if needed |
+| 3 | Request timeout | Retry the command; check network connectivity |
+| 4 | Invite not found | Verify invite ID with `pgecloudctl invites list` |
+
+---
+
+## Troubleshooting
+
+Run `pgecloudctl doctor` for environment diagnostics.
+Run `pgecloudctl doctor -o json` for machine-readable output.

@@ -16,20 +16,20 @@ import (
 
 // Backup list flags.
 var (
-	backupListDatabaseID   string
-	backupListKind         string
-	backupListLimit        int
-	backupListOffset       int
+	backupListDatabaseID    string
+	backupListKind          string
+	backupListLimit         int
+	backupListOffset        int
 	backupListCreatedAfter  string
 	backupListCreatedBefore string
 )
 
 // Backup create flags.
 var (
-	backupCreateDatabaseID string
-	backupCreateProvider   string
-	backupCreateName       string
-	backupCreateType       string
+	backupCreateDatabaseID  string
+	backupCreateProvider    string
+	backupCreateName        string
+	backupCreateType        string
 	backupCreateTargetNodes []string
 )
 

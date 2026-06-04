@@ -1,5 +1,10 @@
 version: 2
 
+before:
+  hooks:
+    - mkdir -p extra
+    - tar -czf extra/pgecloudctl_{{ .Version }}_skill.tar.gz .claude-plugin/ skills/
+
 builds:
   - main: ./cmd/pgecloudctl
     binary: pgecloudctl
@@ -25,6 +30,8 @@ archives:
 
 checksum:
   name_template: 'checksums.txt'
+  extra_files:
+    - glob: extra/*_skill.tar.gz
 
 changelog:
   sort: asc
@@ -46,3 +53,7 @@ brews:
       bin.install "pgecloudctl"
     test: |
       system "#{bin}/pgecloudctl", "version"
+
+release:
+  extra_files:
+    - glob: extra/*_skill.tar.gz

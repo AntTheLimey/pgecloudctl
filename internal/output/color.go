@@ -26,11 +26,11 @@ func ColorStatus(s string) string {
 		return s
 	}
 	switch s {
-	case "active", "running", "completed", "succeeded", "available":
+	case "active", "running", "completed", "succeeded", "available", "ok":
 		return green + s + reset
 	case "failed", "error":
 		return red + s + reset
-	case "creating", "pending", "deleting", "queued":
+	case "creating", "pending", "deleting", "queued", "warning":
 		return yellow + s + reset
 	default:
 		return s

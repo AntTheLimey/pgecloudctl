@@ -31,8 +31,11 @@ func Print(w io.Writer, format string, data any, headers []string) error {
 
 	case "yaml":
 		enc := yaml.NewEncoder(w)
-		defer enc.Close()
-		return enc.Encode(data)
+		err := enc.Encode(data)
+		if closeErr := enc.Close(); err == nil {
+			err = closeErr
+		}
+		return err
 
 	case "table":
 		tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)

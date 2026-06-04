@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/AntTheLimey/pgecloudctl/internal/output"
+	"github.com/spf13/cobra"
 )
 
 func executeCommand(args ...string) (string, error) {
@@ -13,8 +14,23 @@ func executeCommand(args ...string) (string, error) {
 	rootCmd.SetOut(buf)
 	rootCmd.SetErr(buf)
 	rootCmd.SetArgs(args)
+	// Reset the help flag on every command so that a previous --help call
+	// does not cause cobra to print help instead of running the command.
+	resetHelpFlags(rootCmd)
 	err := rootCmd.Execute()
 	return buf.String(), err
+}
+
+// resetHelpFlags sets the "help" flag back to false on cmd and all its
+// subcommands, preventing flag state from leaking between test calls.
+func resetHelpFlags(cmd *cobra.Command) {
+	if f := cmd.Flags().Lookup("help"); f != nil {
+		_ = f.Value.Set("false")
+		f.Changed = false
+	}
+	for _, sub := range cmd.Commands() {
+		resetHelpFlags(sub)
+	}
 }
 
 func TestVersionCommand(t *testing.T) {
