@@ -1,0 +1,166 @@
+# pgecloudctl Command Reference
+
+## Authentication
+Three sources (priority): env vars > flags > config file.
+- Env: `PGEDGE_CLIENT_ID` + `PGEDGE_CLIENT_SECRET`
+- Flags: `--client-id` + `--client-secret`
+- Config: `~/.pgecloudctl/config.json` (written by `auth login`)
+
+## Exit Codes
+0=success, 1=general error, 2=auth failure, 3=timeout, 4=not found
+
+## Global Flags
+`--api-url` (default: https://api.pgedge.com), `-o/--output`
+(table|json|yaml), `--no-color`, `-v/--verbose`, `--client-id`,
+`--client-secret`
+
+Always use `-o json` when capturing output for downstream processing.
+
+---
+
+## Commands
+
+### auth
+- `auth login` — interactive; no required flags
+- `auth status` — no flags; output fields: AUTHENTICATED, SOURCE, EXPIRES
+- `auth logout` — no flags; removes config.json + token.json
+
+### cloud-accounts (alias: ca)
+- `cloud-accounts list` — no required flags;
+  output fields: id, name, type, status
+- `cloud-accounts get <id>` — output fields: id, name, type, role_arn,
+  status, description, created_at
+- `cloud-accounts create` — required: `--name`, `--type` (aws|azure|gcp);
+  AWS also requires `--role-arn`;
+  GCP also requires `--project-id`, `--service-account`;
+  Azure also requires `--azure-client-id`, `--azure-client-secret`,
+  `--subscription-id`, `--tenant-id`;
+  optional: `--description`, `--resource-group` (azure)
+- `cloud-accounts delete <id>` — optional: `--yes`
+- `cloud-accounts cloudformation-template` — prints AWS IAM CloudFormation
+  template; no flags
+
+### clusters
+- `clusters list` — optional: `--limit`, `--offset`;
+  output fields: id, name, status, regions
+- `clusters get <id>` — output fields: id, name, status, node_location,
+  regions, cloud_account_id, created_at
+- `clusters create` — required: `--name`, `--cloud-account-id`,
+  `--regions`, `--node-location` (public|private);
+  response includes task_id
+- `clusters delete <id>` — optional: `--yes`
+
+### clusters shares
+- `clusters shares list <cluster-id>` — output fields: id, name, tenancy,
+  capacity
+- `clusters shares get <cluster-id> <share-id>` — output fields: id, name,
+  tenancy, capacity, allowed_tenants
+- `clusters shares create <cluster-id>` — required: `--name`, `--tenancy`
+  (same|allowlist); optional: `--capacity`, `--allowed-tenants`
+- `clusters shares delete <cluster-id> <share-id>` — optional: `--yes`
+
+### databases
+- `databases list` — optional: `--cluster-id`, `--limit`, `--offset`;
+  output fields: id, name, pg_version, status, cluster_id
+- `databases get <id>` — output fields: id, name, display_name, pg_version,
+  status, cluster_id, created_at
+- `databases create` — required: `--name`, `--cluster-id`;
+  optional: `--pg-version` (default 16);
+  response includes task_id
+- `databases update <id>` — optional: `--display-name`, `--options`
+- `databases delete <id>` — optional: `--yes`
+
+### databases services
+- `databases services list <db-id>` — output fields: id, type, status
+- `databases services get <db-id> <service-id>` — output fields: id, type,
+  status, endpoint
+- `databases services remove <db-id> <type>` — type is mcp or rag
+
+### databases mcp
+- `databases mcp deploy <db-id>` — optional: `--embedding-provider`
+  (ollama|openai|voyage), `--embedding-model`, `--embedding-api-key`,
+  `--ollama-url` (required when provider=ollama), `--allow-writes`,
+  `--target-nodes`, `--init-tokens`, `--init-users`;
+  response includes task_id; output fields: id, type, status, endpoint
+- `databases mcp update <db-id>` — same flags as deploy
+
+### databases rag
+- `databases rag deploy <db-id>` — optional: `--embedding-llm-provider`,
+  `--embedding-llm-model`, `--embedding-llm-api-key`,
+  `--completion-llm-provider`, `--completion-llm-model`,
+  `--completion-llm-api-key`, `--pipeline-config` (path to JSON file),
+  `--target-nodes`, `--top-n`, `--token-budget`;
+  response includes task_id; output fields: id, type, status, endpoint
+- `databases rag update <db-id>` — same flags as deploy
+
+### backups
+- `backups list` — optional: `--database-id`, `--kind`, `--created-after`,
+  `--created-before`, `--limit`, `--offset`;
+  output fields: id, name, kind, status, created_at
+- `backups get <id>` — output fields: id, name, kind, status, database_id,
+  provider, created_at
+- `backups create` — required: `--database-id`; optional: `--provider`,
+  `--name`, `--type`, `--target-nodes`
+- `backups delete <id>` — optional: `--yes`
+- `backups url <id>` — prints time-limited download URL; no flags
+
+### backup-stores
+- `backup-stores list` — optional: `--created-after`, `--created-before`,
+  `--limit`, `--offset`;
+  output fields: id, name, region, cloud_account_id
+- `backup-stores get <id>` — output fields: id, name, region,
+  cloud_account_id, created_at
+- `backup-stores create` — required: `--name`, `--cloud-account-id`,
+  `--region`
+- `backup-stores delete <id>` — optional: `--yes`
+
+### ssh-keys
+- `ssh-keys list` — output fields: id, name, created_at
+- `ssh-keys get <id>` — output fields: id, name, public_key, created_at
+- `ssh-keys create` — required: `--name`, `--public-key`
+- `ssh-keys delete <id>` — optional: `--yes`
+
+### ingresses
+- `ingresses list` — optional: `--created-after`, `--created-before`,
+  `--limit`, `--offset`;
+  output fields: id, name, region, cluster_id, status
+- `ingresses get <id>` — output fields: id, name, region, cluster_id,
+  status, hostname, created_at
+- `ingresses create` — required: `--name`, `--cluster-id`, `--region`;
+  response includes id
+- `ingresses delete <id>` — optional: `--yes`
+
+### ingresses services
+- `ingresses services list <ingress-id>` — output fields: service_id,
+  database_id, type
+- `ingresses services register <ingress-id>` — required: `--database-id`,
+  `--service-id`
+- `ingresses services deregister <ingress-id> <service-id>` — no flags
+
+### invites
+- `invites list` — output fields: id, email, status, expires_at
+- `invites get <id>` — output fields: id, email, status, expires_at,
+  created_at
+- `invites create` — required: `--email`; optional: `--expiration` (hours);
+  response includes id, token
+- `invites delete <id>` — optional: `--yes`
+- `invites accept <id>` — required: `--token`
+
+### memberships
+- `memberships list` — output fields: id, email, role, joined_at
+- `memberships delete <id>` — optional: `--yes`
+
+### tasks
+- `tasks list` — optional: `--status` (queued|running|succeeded|failed),
+  `--subject-id`, `--subject-kind`, `--limit`, `--offset`;
+  output fields: id, kind, status, subject_id, created_at
+- `tasks get <id>` — output fields: id, kind, status, subject_id,
+  subject_kind, created_at, updated_at
+- `tasks wait <id>` — optional: `--timeout` (seconds, default 300),
+  `--interval` (seconds, default 5);
+  exit 0=succeeded, 1=failed, 3=timed out
+
+### doctor
+- `doctor` — no flags; runs 9 checks: Version, Latest version, Auth,
+  API connectivity, Config, Environment, Shell, Install method, Skill;
+  each check reports ok|warning|error

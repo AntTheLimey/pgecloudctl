@@ -1,0 +1,11 @@
+{
+  "name": "pgecloudctl",
+  "description": "Claude Code skill for pgEdge Cloud CLI",
+  "version": "0.3.0",
+  "author": {
+    "name": "Ant Pegg"
+  },
+  "homepage": "https://github.com/AntTheLimey/pgecloudctl",
+  "repository": "https://github.com/AntTheLimey/pgecloudctl",
+  "license": "PostgreSQL"
+}

@@ -1,0 +1,16 @@
+{
+  "name": "pgecloudctl",
+  "owner": {
+    "name": "Ant Pegg",
+    "email": "antony@pgedge.com"
+  },
+  "plugins": [
+    {
+      "name": "pgecloudctl",
+      "source": "./",
+      "description": "Claude Code skill for pgEdge Cloud CLI",
+      "version": "0.3.0",
+      "homepage": "https://github.com/AntTheLimey/pgecloudctl"
+    }
+  ]
+}
