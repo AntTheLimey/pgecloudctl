@@ -1,6 +1,7 @@
 # Build artifacts
 bin/
 dist/
+extra/
 build/
 coverage.out
 
