@@ -23,6 +23,8 @@ Download from
 
     curl -fsSL https://raw.githubusercontent.com/AntTheLimey/pgecloudctl/main/install.sh | sh
 
+Installs the binary and (if Claude Code is detected) the Claude Code skill.
+
 ## Quick Start
 
 ```bash
@@ -106,6 +108,20 @@ export PGEDGE_CLIENT_SECRET="your-client-secret"
 | `clusters shares get <id> <share-id>` | Get share details |
 | `clusters shares delete <id> <share-id>` | Delete a share |
 | `version` | Print version |
+| `doctor` | Run environment diagnostics |
+
+## AI Integration
+
+pgecloudctl includes built-in AI agent support:
+
+- **llms.txt** — structured command reference at the repo root for AI
+  discoverability
+- **Claude Code skill** — installed automatically with the install script.
+  Teaches Claude Code to manage pgEdge Cloud resources via pgecloudctl
+- **Workflow recipes** — step-by-step guides in `docs/workflows/` for common
+  multi-step operations
+- **`doctor` command** — environment diagnostics for AI self-troubleshooting
+  (`pgecloudctl doctor -o json`)
 
 ## Global Flags
 

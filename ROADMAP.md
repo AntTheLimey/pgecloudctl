@@ -59,10 +59,10 @@ Items ranked by weighted score. Higher = do first.
 | UUID prefix matching | 3 | 2 | S (1) | 8.0 | Idea | v0.2 — accept short IDs like Docker does |
 | Command-level tests | 3 | 3 | M (2) | 4.5 | Done | v0.2 — checkResponse, buildServiceList, wait loop |
 | --no-color wiring + color output | 2 | 2 | S (1) | 6.0 | Done | v0.2 — flags declared but not yet functional |
-| llms.txt | 4 | 3 | M (2) | 5.5 | Planned | v0.3 — AI discoverability |
-| Claude Code skill | 4 | 3 | M (2) | 5.5 | Planned | v0.3 — Claude Code integration |
-| AI workflow recipes | 3 | 2 | M (2) | 4.0 | Planned | v0.3 — docs/guides for AI agents |
-| pgecloudctl doctor | 3 | 2 | S (1) | 8.0 | Planned | v0.3 — AI self-diagnostics |
+| llms.txt | 4 | 3 | M (2) | 5.5 | Done | v0.3 — AI discoverability |
+| Claude Code skill | 4 | 3 | M (2) | 5.5 | Done | v0.3 — Claude Code integration |
+| AI workflow recipes | 3 | 2 | M (2) | 4.0 | Done | v0.3 — docs/guides for AI agents |
+| pgecloudctl doctor | 3 | 2 | S (1) | 8.0 | Done | v0.3 — AI self-diagnostics |
 | Multi-tenancy support | 4 | 3 | L (3) | 3.7 | Idea | Blocked on API changes |
 | PostgREST service commands | 3 | 2 | S (1) | 8.0 | Idea | Blocked on API availability |
 | MCP server for CLI | 3 | 2 | L (3) | 2.7 | Idea | Revisit if market demands it |
@@ -98,7 +98,14 @@ Items ranked by weighted score. Higher = do first.
 - --no-color wiring + color output
 - Command-level tests
 
+**v0.3**
+
+- llms.txt
+- Claude Code skill
+- AI workflow recipes
+- pgecloudctl doctor
+
 ---
 
-v0.3 items will move to Planned as v0.2 ships.
+Post-v0.3 ideas tracked in the Idea rows above.
 Multi-tenancy and PostgREST blocked on upstream API work.
