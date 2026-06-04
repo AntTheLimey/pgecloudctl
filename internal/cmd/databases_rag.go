@@ -75,7 +75,7 @@ func init() {
 		"Path to a JSON file containing pipeline definitions")
 	dbRAGDeployCmd.Flags().StringSliceVar(&ragDeployTargetNodes,
 		"target-nodes", nil,
-		"Ordered list of database node names the RAG service connects to")
+		"Node names to deploy on (e.g. n1,n2). Auto-selects if cluster has one node")
 
 	_ = dbRAGDeployCmd.MarkFlagRequired("embedding-llm-provider")
 	_ = dbRAGDeployCmd.MarkFlagRequired("embedding-llm-model")
@@ -115,7 +115,7 @@ func init() {
 		"Path to a JSON file containing pipeline definitions")
 	dbRAGUpdateCmd.Flags().StringSliceVar(&ragUpdateTargetNodes,
 		"target-nodes", nil,
-		"Ordered list of database node names the RAG service connects to")
+		"Node names to deploy on (e.g. n1,n2). Auto-selects if cluster has one node")
 }
 
 var dbRAGCmd = &cobra.Command{
@@ -250,13 +250,23 @@ func applyRAGService(
 		ragCfg.TopN = &topN
 	}
 
+	clusterID, err := uuid.Parse(db.ClusterId)
+	if err != nil {
+		return &ExitError{
+			msg:  fmt.Sprintf("invalid cluster ID %q on database: %v", db.ClusterId, err),
+			code: ExitGeneral,
+		}
+	}
+
+	hostIDs, err := resolveHostIDs(client, clusterID, targetNodes)
+	if err != nil {
+		return err
+	}
+
 	newSvc := api.ServiceConfig{
 		ServiceType: api.ServiceConfigServiceTypeRag,
 		RagConfig:   ragCfg,
-	}
-
-	if len(targetNodes) > 0 {
-		newSvc.TargetNodes = &targetNodes
+		HostIds:     &hostIDs,
 	}
 
 	services := buildServiceList(db, newSvc)

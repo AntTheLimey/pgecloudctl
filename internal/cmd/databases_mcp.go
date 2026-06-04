@@ -51,7 +51,7 @@ func init() {
 	dbMCPDeployCmd.Flags().StringVar(&mcpDeployOllamaURL, "ollama-url", "",
 		"Endpoint URL for an Ollama server (required when --embedding-provider is ollama)")
 	dbMCPDeployCmd.Flags().StringSliceVar(&mcpDeployTargetNodes, "target-nodes", nil,
-		"Ordered list of database node names the MCP service connects to")
+		"Node names to deploy on (e.g. n1,n2). Auto-selects if cluster has one node")
 	dbMCPDeployCmd.Flags().StringVar(&mcpDeployInitTokens, "init-tokens", "",
 		"Bearer token forwarded to the MCP server as INIT_TOKENS")
 	dbMCPDeployCmd.Flags().StringVar(&mcpDeployInitUsers, "init-users", "",
@@ -69,7 +69,7 @@ func init() {
 	dbMCPUpdateCmd.Flags().StringVar(&mcpUpdateOllamaURL, "ollama-url", "",
 		"Endpoint URL for an Ollama server (required when --embedding-provider is ollama)")
 	dbMCPUpdateCmd.Flags().StringSliceVar(&mcpUpdateTargetNodes, "target-nodes", nil,
-		"Ordered list of database node names the MCP service connects to")
+		"Node names to deploy on (e.g. n1,n2). Auto-selects if cluster has one node")
 	dbMCPUpdateCmd.Flags().StringVar(&mcpUpdateInitTokens, "init-tokens", "",
 		"Bearer token forwarded to the MCP server as INIT_TOKENS")
 	dbMCPUpdateCmd.Flags().StringVar(&mcpUpdateInitUsers, "init-users", "",
@@ -175,13 +175,23 @@ func applyMCPService(
 		mcpCfg.InitUsers = &initUsers
 	}
 
+	clusterID, err := uuid.Parse(db.ClusterId)
+	if err != nil {
+		return &ExitError{
+			msg:  fmt.Sprintf("invalid cluster ID %q on database: %v", db.ClusterId, err),
+			code: ExitGeneral,
+		}
+	}
+
+	hostIDs, err := resolveHostIDs(client, clusterID, targetNodes)
+	if err != nil {
+		return err
+	}
+
 	newSvc := api.ServiceConfig{
 		ServiceType: api.ServiceConfigServiceTypeMcp,
 		McpConfig:   mcpCfg,
-	}
-
-	if len(targetNodes) > 0 {
-		newSvc.TargetNodes = &targetNodes
+		HostIds:     &hostIDs,
 	}
 
 	services := buildServiceList(db, newSvc)

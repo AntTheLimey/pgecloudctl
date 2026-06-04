@@ -118,18 +118,11 @@ func runDBServicesRemove(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// Build a new services list excluding the specified type.
 	remaining := make([]api.ServiceConfig, 0)
 	if db.Services != nil {
 		for _, svc := range *db.Services {
 			if string(svc.ServiceType) != svcType {
-				cfg := api.ServiceConfig{
-					ServiceId:   &svc.ServiceId,
-					ServiceType: api.ServiceConfigServiceType(svc.ServiceType),
-					McpConfig:   svc.McpConfig,
-					RagConfig:   svc.RagConfig,
-					TargetNodes: svc.TargetNodes,
-				}
+				cfg := svcToConfig(svc)
 				remaining = append(remaining, cfg)
 			}
 		}
@@ -208,19 +201,26 @@ func buildServiceList(db *api.Database, newSvc api.ServiceConfig) []api.ServiceC
 	if db.Services != nil {
 		for _, svc := range *db.Services {
 			if string(svc.ServiceType) != string(newSvc.ServiceType) {
-				cfg := api.ServiceConfig{
-					ServiceId:   &svc.ServiceId,
-					ServiceType: api.ServiceConfigServiceType(svc.ServiceType),
-					McpConfig:   svc.McpConfig,
-					RagConfig:   svc.RagConfig,
-					TargetNodes: svc.TargetNodes,
-				}
-				result = append(result, cfg)
+				result = append(result, svcToConfig(svc))
 			}
 		}
 	}
 	result = append(result, newSvc)
 	return result
+}
+
+func svcToConfig(svc api.Service) api.ServiceConfig {
+	cfg := api.ServiceConfig{
+		ServiceId:   &svc.ServiceId,
+		ServiceType: api.ServiceConfigServiceType(svc.ServiceType),
+		McpConfig:   svc.McpConfig,
+		RagConfig:   svc.RagConfig,
+		TargetNodes: svc.TargetNodes,
+	}
+	if hostID, err := svc.HostId.Get(); err == nil && hostID != "" {
+		cfg.HostIds = &[]string{hostID}
+	}
+	return cfg
 }
 
 // --- row adapter ---
