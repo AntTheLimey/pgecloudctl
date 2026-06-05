@@ -71,6 +71,13 @@ Always use `-o json` when capturing output for downstream processing.
 - `databases delete <id>` — optional: `--yes`
 
 ### databases services
+
+> **WARNING: Destructive API behavior.** The pgEdge Cloud API treats the
+> `services` field as fully declarative — whatever you send REPLACES all
+> existing services. The CLI uses a read-modify-write pattern to preserve
+> existing services, but direct API callers must include all services in
+> every update or risk destroying running services.
+
 - `databases services list <db-id>` — output fields: id, type, status
 - `databases services get <db-id> <service-id>` — output fields: id, type,
   status, endpoint
@@ -80,7 +87,9 @@ Always use `-o json` when capturing output for downstream processing.
 - `databases mcp deploy <db-id>` — optional: `--embedding-provider`
   (ollama|openai|voyage), `--embedding-model`, `--embedding-api-key`,
   `--ollama-url` (required when provider=ollama), `--allow-writes`,
-  `--target-nodes`, `--init-tokens`, `--init-users`;
+  `--target-nodes` (node names, e.g. n1,n2; auto-selects on single-node
+  clusters; required on multi-node clusters), `--init-tokens`,
+  `--init-users`;
   response includes task_id; output fields: id, type, status, endpoint
 - `databases mcp update <db-id>` — same flags as deploy
 
@@ -89,7 +98,8 @@ Always use `-o json` when capturing output for downstream processing.
   `--embedding-llm-model`, `--embedding-llm-api-key`,
   `--completion-llm-provider`, `--completion-llm-model`,
   `--completion-llm-api-key`, `--pipeline-config` (path to JSON file),
-  `--target-nodes`, `--top-n`, `--token-budget`;
+  `--target-nodes` (node names, e.g. n1,n2; auto-selects on single-node
+  clusters; required on multi-node clusters), `--top-n`, `--token-budget`;
   response includes task_id; output fields: id, type, status, endpoint
 - `databases rag update <db-id>` — same flags as deploy
 

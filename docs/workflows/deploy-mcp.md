@@ -16,8 +16,10 @@ Deploy the pgEdge MCP server onto an existing active database.
   and service registration step is required after deployment
 - **Write access** — pass `--allow-writes` only if agents need INSERT/UPDATE/
   DELETE permissions; omit for read-only workloads
-- **Target nodes** — omit `--target-nodes` to deploy on all nodes; specify a
-  subset for cost control or staged rollout
+- **Target nodes** — on single-node clusters, `--target-nodes` is optional
+  (the node is auto-selected); on multi-node clusters, `--target-nodes` is
+  required. Values are node names (e.g. `n1,n2`), not UUIDs — the CLI
+  resolves names to host IDs automatically
 
 ## Steps
 
@@ -64,7 +66,7 @@ Optional flags:
 | Flag               | Purpose                                          |
 |--------------------|--------------------------------------------------|
 | `--allow-writes`   | Permit INSERT/UPDATE/DELETE via the MCP server   |
-| `--target-nodes`   | Comma-separated list of node IDs to deploy on    |
+| `--target-nodes`   | Node names to deploy on (auto-selects on single-node clusters) |
 | `--init-tokens`    | Number of initial API tokens to create           |
 | `--init-users`     | Number of initial database users to create       |
 | `--ollama-url`     | Ollama endpoint URL (for self-hosted embeddings) |
