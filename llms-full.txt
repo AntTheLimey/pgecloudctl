@@ -567,6 +567,14 @@ Database f6a7b8c9-d0e1-2345-fabc-456789012345 deleted.
 > pattern, but direct API callers must include all existing services in
 > every update.
 
+Service mutations (`mcp deploy`, `mcp update`, `rag deploy`, `rag update`,
+`services remove`) are asynchronous. They spawn a background task and return
+once the request is accepted, so exit 0 means "accepted", not "done". Each
+accepts `--wait` (block until the task reaches a terminal state), `--timeout`
+(default 300 seconds), and `--interval` (default 5 seconds). With `--wait`
+the exit code reflects the outcome: 0 succeeded, 1 failed, 3 timeout. Without
+`--wait`, monitor progress with `tasks list --subject-id <db-id>`.
+
 #### databases services list
 
 List all services deployed on a database.

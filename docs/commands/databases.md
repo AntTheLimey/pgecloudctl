@@ -173,6 +173,26 @@ Manage services (MCP, RAG) deployed alongside a database.
 > pattern, but direct API callers must include all existing services in
 > every update.
 
+### Asynchronous operations and `--wait`
+
+Service mutations — `mcp deploy`, `mcp update`, `rag deploy`, `rag update`,
+and `services remove` — are asynchronous. The API accepts the request and
+spawns a background task, so by default the command returns as soon as the
+request is accepted, not when the work completes. Exit 0 means "accepted".
+
+These commands accept three shared flags:
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--wait` | false | Block until the spawned task reaches a terminal state |
+| `--timeout int` | 300 | Max seconds to wait when `--wait` is set |
+| `--interval int` | 5 | Polling interval in seconds when `--wait` is set |
+
+With `--wait`, the exit code reflects the real outcome: 0 if the task
+succeeded, 1 if it failed, 3 if the timeout was exceeded. Without `--wait`,
+the command prints the `tasks list --subject-id <db-id>` invocation you can
+use to monitor progress yourself.
+
 ### services list
 
 List all services deployed on a database.
