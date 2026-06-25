@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -226,16 +227,17 @@ func applyRAGService(
 		completionLLM.ApiKey = &completionAPIKey
 	}
 
-	// Read and unmarshal pipeline config file if provided.
+	// Read and parse pipeline config file if provided.
 	var pipelines []api.RAGPipelineConfig
 	if pipelineConfigPath != "" {
 		data, readErr := os.ReadFile(pipelineConfigPath)
 		if readErr != nil {
 			return fmt.Errorf("read pipeline config %q: %w", pipelineConfigPath, readErr)
 		}
-		if unmarshalErr := json.Unmarshal(data, &pipelines); unmarshalErr != nil {
+		pipelines, err = parsePipelineConfig(data)
+		if err != nil {
 			return fmt.Errorf("parse pipeline config %q: %w",
-				pipelineConfigPath, unmarshalErr)
+				pipelineConfigPath, err)
 		}
 	}
 
@@ -297,4 +299,36 @@ func applyRAGService(
 
 	fmt.Fprintf(cmd.OutOrStdout(), "RAG service applied to database %s.\n", dbID)
 	return trackServiceMutation(cmd, client, dbID, priorTaskID)
+}
+
+// parsePipelineConfig parses a RAG pipeline definition file. It accepts either
+// a bare JSON array of pipelines or an object with a "pipelines" key — the
+// latter mirrors the shape the API returns under rag_config, so a config read
+// back from the API can be pasted into a file and used directly.
+func parsePipelineConfig(data []byte) ([]api.RAGPipelineConfig, error) {
+	trimmed := bytes.TrimSpace(data)
+	if len(trimmed) > 0 && trimmed[0] == '{' {
+		// Object form: require an explicit "pipelines" key so a typo such as
+		// {"pipeline": [...]} is rejected rather than silently treated as an
+		// empty pipeline list. An explicit {"pipelines": []} is allowed.
+		var probe map[string]json.RawMessage
+		if err := json.Unmarshal(trimmed, &probe); err != nil {
+			return nil, err
+		}
+		raw, ok := probe["pipelines"]
+		if !ok {
+			return nil, fmt.Errorf(`object form must contain a "pipelines" key`)
+		}
+		var pipelines []api.RAGPipelineConfig
+		if err := json.Unmarshal(raw, &pipelines); err != nil {
+			return nil, err
+		}
+		return pipelines, nil
+	}
+
+	var pipelines []api.RAGPipelineConfig
+	if err := json.Unmarshal(trimmed, &pipelines); err != nil {
+		return nil, err
+	}
+	return pipelines, nil
 }

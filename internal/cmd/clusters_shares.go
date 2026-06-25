@@ -1,11 +1,8 @@
 package cmd
 
 import (
-	"bufio"
 	"context"
 	"fmt"
-	"os"
-	"strings"
 
 	"github.com/AntTheLimey/pgecloudctl/internal/api"
 	"github.com/AntTheLimey/pgecloudctl/internal/output"
@@ -267,16 +264,13 @@ func runClusterSharesDelete(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	if !shareDeleteYes {
-		fmt.Fprintf(cmd.OutOrStdout(),
-			"Delete share %s? This cannot be undone. [y/N]: ", args[1])
-		reader := bufio.NewReader(os.Stdin)
-		answer, _ := reader.ReadString('\n')
-		answer = strings.TrimSpace(strings.ToLower(answer))
-		if answer != "y" && answer != "yes" {
-			fmt.Fprintln(cmd.OutOrStdout(), "Aborted.")
-			return nil
-		}
+	ok, err := confirmDestructive(cmd, shareDeleteYes,
+		fmt.Sprintf("Delete share %s? This cannot be undone.", args[1]))
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return nil
 	}
 
 	client, err := newAPIClient()

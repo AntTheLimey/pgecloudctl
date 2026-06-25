@@ -46,6 +46,16 @@ Three sources (priority order):
 | 3 | Timeout |
 | 4 | Not found |
 
+## Destructive operations (`-y/--yes`)
+
+All `delete` commands, plus `databases services remove` and `ingresses
+services deregister`, prompt for confirmation and accept `-y/--yes` to skip
+it. In a non-interactive context (output piped, or run by a script or AI
+agent with no terminal) these commands **exit 1 with "refusing to proceed
+without --yes"** rather than hanging on the prompt or silently aborting — so
+automation must pass `--yes`. `databases services remove` is irrecoverable:
+the removed service's configuration and credentials are discarded.
+
 ## Commands
 
 ---
@@ -637,7 +647,10 @@ Endpoint  https://mcp.a7b8c9d0.pgedge.io
 
 #### databases services remove
 
-Remove a service type (mcp or rag) from a database.
+Remove a service type (mcp or rag) from a database. Irrecoverable — the
+service's configuration and credentials are discarded. Prompts for
+confirmation (see Destructive operations above); asynchronous (see the
+`--wait` note under databases services).
 
 **Usage:** `pgecloudctl databases services remove <db-id> <type> [flags]`
 
@@ -645,6 +658,10 @@ Remove a service type (mcp or rag) from a database.
 
 | Flag | Required | Description |
 |------|----------|-------------|
+| `-y, --yes` | No | Skip the confirmation prompt |
+| `--wait` | No | Wait for the removal task to reach a terminal state |
+| `--timeout int` | No | Max seconds to wait when --wait is set (default 300) |
+| `--interval int` | No | Polling interval in seconds when --wait is set (default 5) |
 | `-h, --help` | No | help for remove |
 
 **Example:**
@@ -2344,6 +2361,10 @@ Deploy the pgEdge RAG server onto an existing active database.
 ```
 
 Adjust `table`, `text_column`, and `vector_column` to match your schema.
+`--pipeline-config` accepts either this `{"pipelines": [...]}` object or a
+bare JSON array of the pipeline objects. The object form matches the API's
+`rag_config` shape, so a config read back via `databases get … -o json` can
+be pasted straight into a file.
 
 **Step 1: Verify database status**
 

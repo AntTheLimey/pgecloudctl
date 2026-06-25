@@ -1,11 +1,8 @@
 package cmd
 
 import (
-	"bufio"
 	"context"
 	"fmt"
-	"os"
-	"strings"
 
 	"github.com/AntTheLimey/pgecloudctl/internal/api"
 	"github.com/AntTheLimey/pgecloudctl/internal/output"
@@ -242,16 +239,13 @@ func runClustersDelete(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	if !clusterDeleteYes {
-		fmt.Fprintf(cmd.OutOrStdout(),
-			"Delete cluster %s? This cannot be undone. [y/N]: ", args[0])
-		reader := bufio.NewReader(os.Stdin)
-		answer, _ := reader.ReadString('\n')
-		answer = strings.TrimSpace(strings.ToLower(answer))
-		if answer != "y" && answer != "yes" {
-			fmt.Fprintln(cmd.OutOrStdout(), "Aborted.")
-			return nil
-		}
+	ok, err := confirmDestructive(cmd, clusterDeleteYes,
+		fmt.Sprintf("Delete cluster %s? This cannot be undone.", args[0]))
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return nil
 	}
 
 	client, err := newAPIClient()

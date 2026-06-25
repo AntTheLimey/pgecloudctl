@@ -1,11 +1,8 @@
 package cmd
 
 import (
-	"bufio"
 	"context"
 	"fmt"
-	"os"
-	"strings"
 
 	"github.com/AntTheLimey/pgecloudctl/internal/output"
 	"github.com/google/uuid"
@@ -95,16 +92,13 @@ func runMembershipsDelete(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	if !membershipDeleteYes {
-		fmt.Fprintf(cmd.OutOrStdout(),
-			"Remove team member %s? [y/N]: ", args[0])
-		reader := bufio.NewReader(os.Stdin)
-		answer, _ := reader.ReadString('\n')
-		answer = strings.TrimSpace(strings.ToLower(answer))
-		if answer != "y" && answer != "yes" {
-			fmt.Fprintln(cmd.OutOrStdout(), "Aborted.")
-			return nil
-		}
+	ok, err := confirmDestructive(cmd, membershipDeleteYes,
+		fmt.Sprintf("Remove team member %s?", args[0]))
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return nil
 	}
 
 	client, err := newAPIClient()

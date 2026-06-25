@@ -17,6 +17,9 @@ var (
 	ingressSvcRegisterServiceID  string
 )
 
+// Ingress service deregister flags.
+var ingressSvcDeregisterYes bool
+
 func init() {
 	ingressesCmd.AddCommand(ingressServicesCmd)
 	ingressServicesCmd.AddCommand(ingressServicesListCmd)
@@ -30,6 +33,9 @@ func init() {
 		"service-id", "", "Service ID to expose")
 	_ = ingressServicesRegisterCmd.MarkFlagRequired("database-id")
 	_ = ingressServicesRegisterCmd.MarkFlagRequired("service-id")
+
+	ingressServicesDeregisterCmd.Flags().BoolVarP(&ingressSvcDeregisterYes,
+		"yes", "y", false, "Skip confirmation prompt")
 }
 
 var ingressServicesCmd = &cobra.Command{
@@ -159,6 +165,15 @@ var ingressServicesDeregisterCmd = &cobra.Command{
 }
 
 func runIngressServicesDeregister(cmd *cobra.Command, args []string) error {
+	ok, err := confirmDestructive(cmd, ingressSvcDeregisterYes, fmt.Sprintf(
+		"Deregister service %s from ingress %s?", args[1], args[0]))
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return nil
+	}
+
 	ingressID, err := uuid.Parse(args[0])
 	if err != nil {
 		return &ExitError{

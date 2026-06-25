@@ -16,6 +16,16 @@ Three sources (priority): env vars > flags > config file.
 
 Always use `-o json` when capturing output for downstream processing.
 
+## Destructive operations (`-y/--yes`)
+
+All `delete` commands, plus `databases services remove` and `ingresses
+services deregister`, prompt for confirmation. They take `-y/--yes` to skip
+the prompt. In a non-interactive context (piped, or run by an agent — no
+TTY) they **fail with exit 1 unless `--yes` is passed**, rather than hanging
+or silently aborting. So scripts and agents must pass `--yes` to proceed.
+Note `services remove` is irrecoverable — it discards the service's config
+and credentials.
+
 ---
 
 ## Commands
@@ -88,7 +98,8 @@ monitor with `pgecloudctl tasks list --subject-id <db-id>`.
 - `databases services list <db-id>` — output fields: id, type, status
 - `databases services get <db-id> <service-id>` — output fields: id, type,
   status, endpoint
-- `databases services remove <db-id> <type>` — type is mcp or rag
+- `databases services remove <db-id> <type>` — type is mcp or rag;
+  prompts for confirmation, `-y/--yes` to skip (required when non-interactive)
 
 ### databases mcp
 - `databases mcp deploy <db-id>` — optional: `--embedding-provider`
@@ -104,7 +115,8 @@ monitor with `pgecloudctl tasks list --subject-id <db-id>`.
 - `databases rag deploy <db-id>` — optional: `--embedding-llm-provider`,
   `--embedding-llm-model`, `--embedding-llm-api-key`,
   `--completion-llm-provider`, `--completion-llm-model`,
-  `--completion-llm-api-key`, `--pipeline-config` (path to JSON file),
+  `--completion-llm-api-key`, `--pipeline-config` (path to a JSON file —
+  either a bare array of pipelines or a `{"pipelines": [...]}` object),
   `--target-nodes` (node names, e.g. n1,n2; auto-selects on single-node
   clusters; required on multi-node clusters), `--top-n`, `--token-budget`;
   response includes task_id; output fields: id, type, status, endpoint
