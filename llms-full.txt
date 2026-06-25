@@ -573,7 +573,7 @@ once the request is accepted, so exit 0 means "accepted", not "done". Each
 accepts `--wait` (block until the task reaches a terminal state), `--timeout`
 (default 300 seconds), and `--interval` (default 5 seconds). With `--wait`
 the exit code reflects the outcome: 0 succeeded, 1 failed, 3 timeout. Without
-`--wait`, monitor progress with `tasks list --subject-id <db-id>`.
+`--wait`, monitor progress with `pgecloudctl tasks list --subject-id <db-id>`.
 
 #### databases services list
 
