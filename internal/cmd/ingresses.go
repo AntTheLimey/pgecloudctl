@@ -1,11 +1,8 @@
 package cmd
 
 import (
-	"bufio"
 	"context"
 	"fmt"
-	"os"
-	"strings"
 	"time"
 
 	"github.com/AntTheLimey/pgecloudctl/internal/api"
@@ -249,16 +246,13 @@ func runIngressesDelete(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	if !ingressDeleteYes {
-		fmt.Fprintf(cmd.OutOrStdout(),
-			"Delete ingress %s? This cannot be undone. [y/N]: ", args[0])
-		reader := bufio.NewReader(os.Stdin)
-		answer, _ := reader.ReadString('\n')
-		answer = strings.TrimSpace(strings.ToLower(answer))
-		if answer != "y" && answer != "yes" {
-			fmt.Fprintln(cmd.OutOrStdout(), "Aborted.")
-			return nil
-		}
+	ok, err := confirmDestructive(cmd, ingressDeleteYes,
+		fmt.Sprintf("Delete ingress %s? This cannot be undone.", args[0]))
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return nil
 	}
 
 	client, err := newAPIClient()

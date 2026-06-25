@@ -11,11 +11,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var dbServicesRemoveYes bool
+
 func init() {
 	databasesCmd.AddCommand(dbServicesCmd)
 	dbServicesCmd.AddCommand(dbServicesListCmd)
 	dbServicesCmd.AddCommand(dbServicesGetCmd)
 	dbServicesCmd.AddCommand(dbServicesRemoveCmd)
+	dbServicesRemoveCmd.Flags().BoolVarP(&dbServicesRemoveYes, "yes", "y",
+		false, "Skip confirmation prompt")
 	addServiceWaitFlags(dbServicesRemoveCmd)
 }
 
@@ -105,6 +109,17 @@ var dbServicesRemoveCmd = &cobra.Command{
 func runDBServicesRemove(cmd *cobra.Command, args []string) error {
 	dbID := args[0]
 	svcType := args[1]
+
+	ok, err := confirmDestructive(cmd, dbServicesRemoveYes, fmt.Sprintf(
+		"Remove %q service from database %s? This cannot be undone; its "+
+			"configuration and credentials are unrecoverable.",
+		svcType, dbID))
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return nil
+	}
 
 	client, db, err := fetchDatabase(dbID)
 	if err != nil {

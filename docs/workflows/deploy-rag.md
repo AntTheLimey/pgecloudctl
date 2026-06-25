@@ -47,6 +47,11 @@ active database.
 Save this to `pipeline.json` and adjust `table`, `text_column`, and
 `vector_column` to match the target schema before running the deploy command.
 
+`--pipeline-config` accepts either the `{"pipelines": [...]}` object shown
+above or a bare JSON array of the pipeline objects. The object form matches
+the shape the API returns under `rag_config`, so a config read back with
+`databases get … -o json` can be pasted straight into a file.
+
 ## Steps
 
 ### Step 1: Verify database status

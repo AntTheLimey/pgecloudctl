@@ -193,6 +193,16 @@ succeeded, 1 if it failed, 3 if the timeout was exceeded. Without `--wait`,
 the command prints the `pgecloudctl tasks list --subject-id <db-id>`
 invocation you can use to monitor progress yourself.
 
+### Destructive operations
+
+`services remove` (and every `delete` command in the CLI) prompts for
+confirmation before acting. Pass `-y/--yes` to skip the prompt. In a
+non-interactive context — output piped, or run by a script or AI agent with
+no terminal — the command **exits 1 with "refusing to proceed without
+--yes"** instead of hanging on the prompt or silently aborting. Scripts and
+agents must therefore pass `--yes` to proceed. `services remove` is
+irrecoverable: the removed service's configuration and credentials are gone.
+
 ### services list
 
 List all services deployed on a database.
@@ -255,7 +265,11 @@ Endpoint  https://mcp.a7b8c9d0.pgedge.io
 
 ### services remove
 
-Remove a service type (mcp or rag) from a database.
+Remove a service type (mcp or rag) from a database. This is **irrecoverable**
+— the service's configuration and credentials are discarded. The command
+prompts for confirmation; see [Destructive operations](#destructive-operations)
+for `--yes` and non-interactive behavior. It is also asynchronous; see
+[Asynchronous operations and `--wait`](#asynchronous-operations-and---wait).
 
 **Usage:** `pgecloudctl databases services remove <db-id> <type> [flags]`
 
@@ -263,6 +277,10 @@ Remove a service type (mcp or rag) from a database.
 
 | Flag | Required | Description |
 |------|----------|-------------|
+| `-y, --yes` | No | Skip the confirmation prompt |
+| `--wait` | No | Wait for the removal task to reach a terminal state |
+| `--timeout int` | No | Max seconds to wait when `--wait` is set (default 300) |
+| `--interval int` | No | Polling interval in seconds when `--wait` is set (default 5) |
 | `-h, --help` | No | help for remove |
 
 **Example:**
