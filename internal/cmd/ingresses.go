@@ -216,21 +216,23 @@ func runIngressesCreate(cmd *cobra.Command, _ []string) error {
 	}
 
 	ing := resp.JSON200
-	switch {
-	case flagOutput != "table":
+	if ing == nil {
+		// Accepted, but no body to read an id from — nothing to track.
+		if flagOutput == "table" {
+			fmt.Fprintln(cmd.OutOrStdout(),
+				"Ingress created (no details returned).")
+		}
+		return nil
+	}
+
+	if flagOutput != "table" {
 		if err := output.Print(cmd.OutOrStdout(), flagOutput, ing, nil); err != nil {
 			return err
 		}
-	case ing == nil:
-		fmt.Fprintln(cmd.OutOrStdout(), "Ingress created (no details returned).")
-	default:
+	} else {
 		fmt.Fprintf(cmd.OutOrStdout(),
 			"Ingress %q created (id: %s, status: %s).\n",
 			ing.Name, ing.Id, ing.Status)
-	}
-
-	if ing == nil {
-		return nil
 	}
 	return trackMutation(cmd, client, ing.Id, "")
 }

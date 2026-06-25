@@ -237,21 +237,23 @@ func runDatabasesCreate(cmd *cobra.Command, _ []string) error {
 	}
 
 	d := resp.JSON200
-	switch {
-	case flagOutput != "table":
+	if d == nil {
+		// Accepted, but no body to read an id from — nothing to track.
+		if flagOutput == "table" {
+			fmt.Fprintln(cmd.OutOrStdout(),
+				"Database created (no details returned).")
+		}
+		return nil
+	}
+
+	if flagOutput != "table" {
 		if err := output.Print(cmd.OutOrStdout(), flagOutput, d, nil); err != nil {
 			return err
 		}
-	case d == nil:
-		fmt.Fprintln(cmd.OutOrStdout(), "Database created (no details returned).")
-	default:
+	} else {
 		fmt.Fprintf(cmd.OutOrStdout(),
 			"Database %q created (id: %s, status: %s).\n",
 			d.Name, d.Id, d.Status)
-	}
-
-	if d == nil {
-		return nil
 	}
 	return trackMutation(cmd, client, d.Id, "")
 }

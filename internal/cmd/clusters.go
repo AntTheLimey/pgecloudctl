@@ -209,21 +209,23 @@ func runClustersCreate(cmd *cobra.Command, _ []string) error {
 	}
 
 	c := resp.JSON200
-	switch {
-	case flagOutput != "table":
+	if c == nil {
+		// Accepted, but no body to read an id from — nothing to track.
+		if flagOutput == "table" {
+			fmt.Fprintln(cmd.OutOrStdout(),
+				"Cluster created (no details returned).")
+		}
+		return nil
+	}
+
+	if flagOutput != "table" {
 		if err := output.Print(cmd.OutOrStdout(), flagOutput, c, nil); err != nil {
 			return err
 		}
-	case c == nil:
-		fmt.Fprintln(cmd.OutOrStdout(), "Cluster created (no details returned).")
-	default:
+	} else {
 		fmt.Fprintf(cmd.OutOrStdout(),
 			"Cluster %q created (id: %s, status: %s).\n",
 			c.Name, c.Id, c.Status)
-	}
-
-	if c == nil {
-		return nil
 	}
 	return trackMutation(cmd, client, c.Id, "")
 }

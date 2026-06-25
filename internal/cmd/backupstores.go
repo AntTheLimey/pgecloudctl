@@ -239,21 +239,23 @@ func runBackupStoresCreate(cmd *cobra.Command, _ []string) error {
 	}
 
 	s := resp.JSON200
-	switch {
-	case flagOutput != "table":
+	if s == nil {
+		// Accepted, but no body to read an id from — nothing to track.
+		if flagOutput == "table" {
+			fmt.Fprintln(cmd.OutOrStdout(),
+				"Backup store created (no details returned).")
+		}
+		return nil
+	}
+
+	if flagOutput != "table" {
 		if err := output.Print(cmd.OutOrStdout(), flagOutput, s, nil); err != nil {
 			return err
 		}
-	case s == nil:
-		fmt.Fprintln(cmd.OutOrStdout(), "Backup store created (no details returned).")
-	default:
+	} else {
 		fmt.Fprintf(cmd.OutOrStdout(),
 			"Backup store %q created (id: %s, status: %s).\n",
 			s.Name, s.Id, s.Status)
-	}
-
-	if s == nil {
-		return nil
 	}
 	return trackMutation(cmd, client, s.Id, "")
 }
