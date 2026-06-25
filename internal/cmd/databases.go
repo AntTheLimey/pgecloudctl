@@ -237,13 +237,14 @@ func runDatabasesCreate(cmd *cobra.Command, _ []string) error {
 	}
 
 	d := resp.JSON200
-	if flagOutput != "table" {
+	switch {
+	case flagOutput != "table":
 		if err := output.Print(cmd.OutOrStdout(), flagOutput, d, nil); err != nil {
 			return err
 		}
-	} else if d == nil {
+	case d == nil:
 		fmt.Fprintln(cmd.OutOrStdout(), "Database created (no details returned).")
-	} else {
+	default:
 		fmt.Fprintf(cmd.OutOrStdout(),
 			"Database %q created (id: %s, status: %s).\n",
 			d.Name, d.Id, d.Status)

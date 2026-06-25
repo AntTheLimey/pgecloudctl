@@ -209,13 +209,14 @@ func runClustersCreate(cmd *cobra.Command, _ []string) error {
 	}
 
 	c := resp.JSON200
-	if flagOutput != "table" {
+	switch {
+	case flagOutput != "table":
 		if err := output.Print(cmd.OutOrStdout(), flagOutput, c, nil); err != nil {
 			return err
 		}
-	} else if c == nil {
+	case c == nil:
 		fmt.Fprintln(cmd.OutOrStdout(), "Cluster created (no details returned).")
-	} else {
+	default:
 		fmt.Fprintf(cmd.OutOrStdout(),
 			"Cluster %q created (id: %s, status: %s).\n",
 			c.Name, c.Id, c.Status)
