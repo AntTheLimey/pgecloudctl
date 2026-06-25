@@ -56,6 +56,20 @@ without --yes"** rather than hanging on the prompt or silently aborting — so
 automation must pass `--yes`. `databases services remove` is irrecoverable:
 the removed service's configuration and credentials are discarded.
 
+## Asynchronous operations (`--wait`)
+
+Operations that spawn a background task — `create` and `delete` for
+databases, clusters, ingresses, and backup-stores, plus the service
+mutations (`mcp`/`rag deploy`/`update`, `services remove`) — accept `--wait`
+(with `--timeout`, default 300 seconds, and `--interval`, default 5
+seconds). Without `--wait` the command returns once the request is accepted,
+not when the work completes. With `--wait` it blocks until the task reaches a
+terminal state, and the exit code reflects the outcome: 0 succeeded,
+1 failed, 3 timeout. In table output, the non-wait path prints the
+`pgecloudctl tasks list --subject-id <id>` command for manual monitoring.
+Metadata commands (ssh-keys, cloud-accounts, invites, memberships, cluster
+shares) are synchronous and have no `--wait`.
+
 ## Commands
 
 ---

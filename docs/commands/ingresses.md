@@ -3,6 +3,13 @@
 Manage pgEdge Cloud ingresses — regional load balancers that route
 external traffic to database services such as the MCP or RAG server.
 
+> **Async:** `create` and `delete` spawn a background task and return as
+> soon as the request is accepted. Pass `--wait` (with optional `--timeout`,
+> default 300, and `--interval`, default 5) to block until the task reaches a
+> terminal state — exit 0 succeeded, 1 failed, 3 timeout. Without `--wait`,
+> monitor with `pgecloudctl tasks list --subject-id <id>`. `delete` also
+> prompts for confirmation unless `-y/--yes` is passed.
+
 ## Subcommands
 
 ### list

@@ -55,10 +55,12 @@ func init() {
 		"Region for the backup store")
 	_ = backupStoresCreateCmd.MarkFlagRequired("name")
 	_ = backupStoresCreateCmd.MarkFlagRequired("cloud-account-id")
+	addWaitFlags(backupStoresCreateCmd)
 
 	// delete flags
 	backupStoresDeleteCmd.Flags().BoolVarP(&backupStoreDeleteYes, "yes", "y",
 		false, "Skip confirmation prompt")
+	addWaitFlags(backupStoresDeleteCmd)
 }
 
 var backupStoresCmd = &cobra.Command{
@@ -236,20 +238,23 @@ func runBackupStoresCreate(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
+	s := resp.JSON200
 	if flagOutput != "table" {
-		return output.Print(cmd.OutOrStdout(), flagOutput, resp.JSON200, nil)
+		if err := output.Print(cmd.OutOrStdout(), flagOutput, s, nil); err != nil {
+			return err
+		}
+	} else if s == nil {
+		fmt.Fprintln(cmd.OutOrStdout(), "Backup store created (no details returned).")
+	} else {
+		fmt.Fprintf(cmd.OutOrStdout(),
+			"Backup store %q created (id: %s, status: %s).\n",
+			s.Name, s.Id, s.Status)
 	}
 
-	s := resp.JSON200
 	if s == nil {
-		fmt.Fprintln(cmd.OutOrStdout(), "Backup store created (no details returned).")
 		return nil
 	}
-
-	fmt.Fprintf(cmd.OutOrStdout(),
-		"Backup store %q created (id: %s, status: %s).\n",
-		s.Name, s.Id, s.Status)
-	return nil
+	return trackMutation(cmd, client, s.Id, "")
 }
 
 // --- delete ---
@@ -284,6 +289,15 @@ func runBackupStoresDelete(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	var priorTaskID string
+	if waitFlag {
+		priorTaskID, err = newestSubjectTaskID(
+			context.Background(), client, id.String())
+		if err != nil {
+			return err
+		}
+	}
+
 	resp, err := client.DeleteBackupStoreWithResponse(context.Background(), id)
 	if err != nil {
 		return fmt.Errorf("delete backup store: %w", err)
@@ -294,7 +308,7 @@ func runBackupStoresDelete(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Fprintf(cmd.OutOrStdout(), "Backup store %s deleted.\n", args[0])
-	return nil
+	return trackMutation(cmd, client, id.String(), priorTaskID)
 }
 
 // --- row adapter ---

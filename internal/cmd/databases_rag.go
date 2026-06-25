@@ -77,7 +77,7 @@ func init() {
 	dbRAGDeployCmd.Flags().StringSliceVar(&ragDeployTargetNodes,
 		"target-nodes", nil,
 		"Node names to deploy on (e.g. n1,n2). Auto-selects if cluster has one node")
-	addServiceWaitFlags(dbRAGDeployCmd)
+	addWaitFlags(dbRAGDeployCmd)
 
 	_ = dbRAGDeployCmd.MarkFlagRequired("embedding-llm-provider")
 	_ = dbRAGDeployCmd.MarkFlagRequired("embedding-llm-model")
@@ -118,7 +118,7 @@ func init() {
 	dbRAGUpdateCmd.Flags().StringSliceVar(&ragUpdateTargetNodes,
 		"target-nodes", nil,
 		"Node names to deploy on (e.g. n1,n2). Auto-selects if cluster has one node")
-	addServiceWaitFlags(dbRAGUpdateCmd)
+	addWaitFlags(dbRAGUpdateCmd)
 }
 
 var dbRAGCmd = &cobra.Command{
@@ -281,7 +281,7 @@ func applyRAGService(
 	}
 
 	var priorTaskID string
-	if svcWait {
+	if waitFlag {
 		priorTaskID, err = newestSubjectTaskID(context.Background(), client, dbID)
 		if err != nil {
 			return err
@@ -298,7 +298,7 @@ func applyRAGService(
 	}
 
 	fmt.Fprintf(cmd.OutOrStdout(), "RAG service applied to database %s.\n", dbID)
-	return trackServiceMutation(cmd, client, dbID, priorTaskID)
+	return trackMutation(cmd, client, dbID, priorTaskID)
 }
 
 // parsePipelineConfig parses a RAG pipeline definition file. It accepts either
