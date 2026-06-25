@@ -20,6 +20,8 @@ func TestParsePipelineConfig(t *testing.T) {
 		{name: "bare array", data: bareArray, wantLen: 1, wantName: "p1"},
 		{name: "wrapped object", data: wrapped, wantLen: 1, wantName: "p1"},
 		{name: "empty array", data: `[]`, wantLen: 0},
+		{name: "explicit empty pipelines", data: `{"pipelines": []}`, wantLen: 0},
+		{name: "wrong key typo", data: `{"pipeline": []}`, wantError: true},
 		{name: "invalid json", data: `{not json`, wantError: true},
 		{name: "wrong shape", data: `"a string"`, wantError: true},
 	}

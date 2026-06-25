@@ -110,6 +110,14 @@ func runDBServicesRemove(cmd *cobra.Command, args []string) error {
 	dbID := args[0]
 	svcType := args[1]
 
+	id, err := uuid.Parse(dbID)
+	if err != nil {
+		return &ExitError{
+			msg:  fmt.Sprintf("invalid database ID %q: %v", dbID, err),
+			code: ExitGeneral,
+		}
+	}
+
 	ok, err := confirmDestructive(cmd, dbServicesRemoveYes, fmt.Sprintf(
 		"Remove %q service from database %s? This cannot be undone; its "+
 			"configuration and credentials are unrecoverable.",
@@ -124,14 +132,6 @@ func runDBServicesRemove(cmd *cobra.Command, args []string) error {
 	client, db, err := fetchDatabase(dbID)
 	if err != nil {
 		return err
-	}
-
-	id, err := uuid.Parse(dbID)
-	if err != nil {
-		return &ExitError{
-			msg:  fmt.Sprintf("invalid database ID %q: %v", dbID, err),
-			code: ExitGeneral,
-		}
 	}
 
 	remaining := make([]api.ServiceConfig, 0)

@@ -308,13 +308,22 @@ func applyRAGService(
 func parsePipelineConfig(data []byte) ([]api.RAGPipelineConfig, error) {
 	trimmed := bytes.TrimSpace(data)
 	if len(trimmed) > 0 && trimmed[0] == '{' {
-		var wrapped struct {
-			Pipelines []api.RAGPipelineConfig `json:"pipelines"`
-		}
-		if err := json.Unmarshal(trimmed, &wrapped); err != nil {
+		// Object form: require an explicit "pipelines" key so a typo such as
+		// {"pipeline": [...]} is rejected rather than silently treated as an
+		// empty pipeline list. An explicit {"pipelines": []} is allowed.
+		var probe map[string]json.RawMessage
+		if err := json.Unmarshal(trimmed, &probe); err != nil {
 			return nil, err
 		}
-		return wrapped.Pipelines, nil
+		raw, ok := probe["pipelines"]
+		if !ok {
+			return nil, fmt.Errorf(`object form must contain a "pipelines" key`)
+		}
+		var pipelines []api.RAGPipelineConfig
+		if err := json.Unmarshal(raw, &pipelines); err != nil {
+			return nil, err
+		}
+		return pipelines, nil
 	}
 
 	var pipelines []api.RAGPipelineConfig
