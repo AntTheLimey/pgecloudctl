@@ -190,8 +190,8 @@ These commands accept three shared flags:
 
 With `--wait`, the exit code reflects the real outcome: 0 if the task
 succeeded, 1 if it failed, 3 if the timeout was exceeded. Without `--wait`,
-the command prints the `tasks list --subject-id <db-id>` invocation you can
-use to monitor progress yourself.
+the command prints the `pgecloudctl tasks list --subject-id <db-id>`
+invocation you can use to monitor progress yourself.
 
 ### services list
 

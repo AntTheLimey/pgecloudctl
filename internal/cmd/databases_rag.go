@@ -280,7 +280,7 @@ func applyRAGService(
 
 	var priorTaskID string
 	if svcWait {
-		priorTaskID, err = newestSubjectTaskID(client, dbID)
+		priorTaskID, err = newestSubjectTaskID(context.Background(), client, dbID)
 		if err != nil {
 			return err
 		}

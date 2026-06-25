@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"strings"
@@ -64,7 +65,7 @@ func TestNewestSubjectTaskID(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			client := newTestClient(t, tasksMux(tt.tasks, nil))
-			got, err := newestSubjectTaskID(client, "subj")
+			got, err := newestSubjectTaskID(context.Background(), client, "subj")
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
@@ -80,19 +81,14 @@ func TestWaitForSubjectTask_Succeeds(t *testing.T) {
 		{Id: "new-task", CreatedAt: "2026-06-25T02:00:00Z"},
 		{Id: "old-task", CreatedAt: "2026-06-25T01:00:00Z"},
 	}
-	calls := 0
 	byID := func(id string) (api.Task, bool) {
-		calls++
-		status := "running"
-		if calls >= 2 {
-			status = "succeeded"
-		}
-		return api.Task{Id: id, Status: status}, true
+		return api.Task{Id: id, Status: "succeeded"}, true
 	}
 
 	client := newTestClient(t, tasksMux(subjectTasks, byID))
 	cmd, buf := waitTestCmd()
 
+	// interval 0 is clamped to 1s, so a single poll keeps the test fast.
 	err := waitForSubjectTask(cmd, client, "subj", "old-task", 10, 0)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -144,7 +140,8 @@ func TestWaitForSubjectTask_TimesOutWhenNoNewTask(t *testing.T) {
 	client := newTestClient(t, tasksMux(subjectTasks, nil))
 	cmd, _ := waitTestCmd()
 
-	err := waitForSubjectTask(cmd, client, "subj", "old-task", 0, 0)
+	// 1s timeout: one poll finds no new task, then the deadline trips.
+	err := waitForSubjectTask(cmd, client, "subj", "old-task", 1, 0)
 	if err == nil {
 		t.Fatal("expected timeout error")
 	}
