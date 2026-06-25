@@ -76,6 +76,7 @@ func init() {
 	dbRAGDeployCmd.Flags().StringSliceVar(&ragDeployTargetNodes,
 		"target-nodes", nil,
 		"Node names to deploy on (e.g. n1,n2). Auto-selects if cluster has one node")
+	addServiceWaitFlags(dbRAGDeployCmd)
 
 	_ = dbRAGDeployCmd.MarkFlagRequired("embedding-llm-provider")
 	_ = dbRAGDeployCmd.MarkFlagRequired("embedding-llm-model")
@@ -116,6 +117,7 @@ func init() {
 	dbRAGUpdateCmd.Flags().StringSliceVar(&ragUpdateTargetNodes,
 		"target-nodes", nil,
 		"Node names to deploy on (e.g. n1,n2). Auto-selects if cluster has one node")
+	addServiceWaitFlags(dbRAGUpdateCmd)
 }
 
 var dbRAGCmd = &cobra.Command{
@@ -276,6 +278,14 @@ func applyRAGService(
 		Services: svcs,
 	}
 
+	var priorTaskID string
+	if svcWait {
+		priorTaskID, err = newestSubjectTaskID(context.Background(), client, dbID)
+		if err != nil {
+			return err
+		}
+	}
+
 	resp, err := client.UpdateDatabaseWithResponse(context.Background(), id, body)
 	if err != nil {
 		return fmt.Errorf("apply RAG service: %w", err)
@@ -286,5 +296,5 @@ func applyRAGService(
 	}
 
 	fmt.Fprintf(cmd.OutOrStdout(), "RAG service applied to database %s.\n", dbID)
-	return nil
+	return trackServiceMutation(cmd, client, dbID, priorTaskID)
 }

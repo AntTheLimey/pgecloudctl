@@ -16,6 +16,7 @@ func init() {
 	dbServicesCmd.AddCommand(dbServicesListCmd)
 	dbServicesCmd.AddCommand(dbServicesGetCmd)
 	dbServicesCmd.AddCommand(dbServicesRemoveCmd)
+	addServiceWaitFlags(dbServicesRemoveCmd)
 }
 
 var dbServicesCmd = &cobra.Command{
@@ -133,6 +134,14 @@ func runDBServicesRemove(cmd *cobra.Command, args []string) error {
 		Services: svcs,
 	}
 
+	var priorTaskID string
+	if svcWait {
+		priorTaskID, err = newestSubjectTaskID(context.Background(), client, dbID)
+		if err != nil {
+			return err
+		}
+	}
+
 	resp, err := client.UpdateDatabaseWithResponse(context.Background(), id, body)
 	if err != nil {
 		return fmt.Errorf("remove service: %w", err)
@@ -142,9 +151,9 @@ func runDBServicesRemove(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	fmt.Fprintf(cmd.OutOrStdout(), "Service type %q removed from database %s.\n",
-		svcType, dbID)
-	return nil
+	fmt.Fprintf(cmd.OutOrStdout(),
+		"Service type %q removal requested for database %s.\n", svcType, dbID)
+	return trackServiceMutation(cmd, client, dbID, priorTaskID)
 }
 
 // --- shared helpers ---

@@ -78,6 +78,13 @@ Always use `-o json` when capturing output for downstream processing.
 > existing services, but direct API callers must include all services in
 > every update or risk destroying running services.
 
+Service mutations (`mcp deploy/update`, `rag deploy/update`, `services
+remove`) are asynchronous — they spawn a background task and return once the
+request is accepted. Add `--wait` (with optional `--timeout`, default 300,
+and `--interval`, default 5) to block until the task reaches a terminal
+state; exit code is then 0 succeeded, 1 failed, 3 timeout. Without `--wait`,
+monitor with `pgecloudctl tasks list --subject-id <db-id>`.
+
 - `databases services list <db-id>` — output fields: id, type, status
 - `databases services get <db-id> <service-id>` — output fields: id, type,
   status, endpoint
