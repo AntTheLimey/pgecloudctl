@@ -56,6 +56,7 @@ func init() {
 		"Bearer token forwarded to the MCP server as INIT_TOKENS")
 	dbMCPDeployCmd.Flags().StringVar(&mcpDeployInitUsers, "init-users", "",
 		"Comma-separated username:password pairs forwarded as INIT_USERS")
+	addServiceWaitFlags(dbMCPDeployCmd)
 
 	// update flags (same set)
 	dbMCPUpdateCmd.Flags().BoolVar(&mcpUpdateAllowWrites, "allow-writes", false,
@@ -74,6 +75,7 @@ func init() {
 		"Bearer token forwarded to the MCP server as INIT_TOKENS")
 	dbMCPUpdateCmd.Flags().StringVar(&mcpUpdateInitUsers, "init-users", "",
 		"Comma-separated username:password pairs forwarded as INIT_USERS")
+	addServiceWaitFlags(dbMCPUpdateCmd)
 }
 
 var dbMCPCmd = &cobra.Command{
@@ -201,6 +203,14 @@ func applyMCPService(
 		Services: svcs,
 	}
 
+	var priorTaskID string
+	if svcWait {
+		priorTaskID, err = newestSubjectTaskID(client, dbID)
+		if err != nil {
+			return err
+		}
+	}
+
 	resp, err := client.UpdateDatabaseWithResponse(context.Background(), id, body)
 	if err != nil {
 		return fmt.Errorf("apply MCP service: %w", err)
@@ -211,5 +221,5 @@ func applyMCPService(
 	}
 
 	fmt.Fprintf(cmd.OutOrStdout(), "MCP service applied to database %s.\n", dbID)
-	return nil
+	return trackServiceMutation(cmd, client, dbID, priorTaskID)
 }
