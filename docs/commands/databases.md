@@ -3,6 +3,14 @@
 Manage pgEdge Cloud databases, along with MCP servers, RAG servers, and
 other services deployed alongside them.
 
+> **Async:** `create`, `delete`, and the service mutations
+> (`mcp`/`rag deploy`/`update`, `services remove`) spawn a background task.
+> Pass `--wait` (with optional `--timeout`, default 300, and `--interval`,
+> default 5) to block until the task reaches a terminal state — exit 0
+> succeeded, 1 failed, 3 timeout. See
+> [Asynchronous operations and `--wait`](#asynchronous-operations-and---wait)
+> and [Destructive operations](#destructive-operations).
+
 ## Subcommands
 
 ### list

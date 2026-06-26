@@ -66,6 +66,7 @@ func init() {
 		"PostgreSQL version (e.g. 16)")
 	_ = databasesCreateCmd.MarkFlagRequired("name")
 	_ = databasesCreateCmd.MarkFlagRequired("cluster-id")
+	addWaitFlags(databasesCreateCmd)
 
 	// update flags
 	databasesUpdateCmd.Flags().StringVar(&dbUpdateDisplayName, "display-name", "",
@@ -76,6 +77,7 @@ func init() {
 	// delete flags
 	databasesDeleteCmd.Flags().BoolVarP(&dbDeleteYes, "yes", "y", false,
 		"Skip confirmation prompt")
+	addWaitFlags(databasesDeleteCmd)
 }
 
 // --- list ---
@@ -234,20 +236,26 @@ func runDatabasesCreate(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
-	if flagOutput != "table" {
-		return output.Print(cmd.OutOrStdout(), flagOutput, resp.JSON200, nil)
-	}
-
 	d := resp.JSON200
 	if d == nil {
-		fmt.Fprintln(cmd.OutOrStdout(), "Database created (no details returned).")
+		// Accepted, but no body to read an id from — nothing to track.
+		if flagOutput == "table" {
+			fmt.Fprintln(cmd.OutOrStdout(),
+				"Database created (no details returned).")
+		}
 		return nil
 	}
 
-	fmt.Fprintf(cmd.OutOrStdout(),
-		"Database %q created (id: %s, status: %s).\n",
-		d.Name, d.Id, d.Status)
-	return nil
+	if flagOutput != "table" {
+		if err := output.Print(cmd.OutOrStdout(), flagOutput, d, nil); err != nil {
+			return err
+		}
+	} else {
+		fmt.Fprintf(cmd.OutOrStdout(),
+			"Database %q created (id: %s, status: %s).\n",
+			d.Name, d.Id, d.Status)
+	}
+	return trackMutation(cmd, client, d.Id, "")
 }
 
 // --- update ---
@@ -338,6 +346,15 @@ func runDatabasesDelete(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	var priorTaskID string
+	if waitFlag {
+		priorTaskID, err = newestSubjectTaskID(
+			context.Background(), client, id.String())
+		if err != nil {
+			return err
+		}
+	}
+
 	resp, err := client.DeleteDatabaseWithResponse(context.Background(), id)
 	if err != nil {
 		return fmt.Errorf("delete database: %w", err)
@@ -348,7 +365,7 @@ func runDatabasesDelete(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Fprintf(cmd.OutOrStdout(), "Database %s deleted.\n", args[0])
-	return nil
+	return trackMutation(cmd, client, id.String(), priorTaskID)
 }
 
 // --- row adapter ---

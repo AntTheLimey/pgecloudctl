@@ -76,6 +76,34 @@ func TestNewestSubjectTaskID(t *testing.T) {
 	}
 }
 
+func TestTrackMutation_NonWaitHint(t *testing.T) {
+	origWait, origOut := waitFlag, flagOutput
+	t.Cleanup(func() { waitFlag, flagOutput = origWait, origOut })
+	waitFlag = false // exercise the non-wait path; no client needed
+
+	t.Run("table prints monitor hint", func(t *testing.T) {
+		flagOutput = "table"
+		cmd, buf := waitTestCmd()
+		if err := trackMutation(cmd, nil, "subj-1", ""); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !strings.Contains(buf.String(), "tasks list --subject-id subj-1") {
+			t.Errorf("expected monitor hint, got: %q", buf.String())
+		}
+	})
+
+	t.Run("json output stays silent", func(t *testing.T) {
+		flagOutput = "json"
+		cmd, buf := waitTestCmd()
+		if err := trackMutation(cmd, nil, "subj-1", ""); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if buf.String() != "" {
+			t.Errorf("expected no output in json mode, got: %q", buf.String())
+		}
+	})
+}
+
 func TestWaitForSubjectTask_Succeeds(t *testing.T) {
 	subjectTasks := []api.Task{
 		{Id: "new-task", CreatedAt: "2026-06-25T02:00:00Z"},

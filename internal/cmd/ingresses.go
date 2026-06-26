@@ -56,10 +56,12 @@ func init() {
 	_ = ingressesCreateCmd.MarkFlagRequired("name")
 	_ = ingressesCreateCmd.MarkFlagRequired("cluster-id")
 	_ = ingressesCreateCmd.MarkFlagRequired("region")
+	addWaitFlags(ingressesCreateCmd)
 
 	// delete flags
 	ingressesDeleteCmd.Flags().BoolVarP(&ingressDeleteYes, "yes", "y",
 		false, "Skip confirmation prompt")
+	addWaitFlags(ingressesDeleteCmd)
 }
 
 var ingressesCmd = &cobra.Command{
@@ -213,19 +215,26 @@ func runIngressesCreate(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
-	if flagOutput != "table" {
-		return output.Print(cmd.OutOrStdout(), flagOutput, resp.JSON200, nil)
-	}
-
 	ing := resp.JSON200
 	if ing == nil {
-		fmt.Fprintln(cmd.OutOrStdout(), "Ingress created (no details returned).")
+		// Accepted, but no body to read an id from — nothing to track.
+		if flagOutput == "table" {
+			fmt.Fprintln(cmd.OutOrStdout(),
+				"Ingress created (no details returned).")
+		}
 		return nil
 	}
 
-	fmt.Fprintf(cmd.OutOrStdout(), "Ingress %q created (id: %s, status: %s).\n",
-		ing.Name, ing.Id, ing.Status)
-	return nil
+	if flagOutput != "table" {
+		if err := output.Print(cmd.OutOrStdout(), flagOutput, ing, nil); err != nil {
+			return err
+		}
+	} else {
+		fmt.Fprintf(cmd.OutOrStdout(),
+			"Ingress %q created (id: %s, status: %s).\n",
+			ing.Name, ing.Id, ing.Status)
+	}
+	return trackMutation(cmd, client, ing.Id, "")
 }
 
 // --- delete ---
@@ -260,6 +269,15 @@ func runIngressesDelete(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	var priorTaskID string
+	if waitFlag {
+		priorTaskID, err = newestSubjectTaskID(
+			context.Background(), client, id.String())
+		if err != nil {
+			return err
+		}
+	}
+
 	resp, err := client.DeleteIngressWithResponse(context.Background(), id)
 	if err != nil {
 		return fmt.Errorf("delete ingress: %w", err)
@@ -270,7 +288,7 @@ func runIngressesDelete(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Fprintf(cmd.OutOrStdout(), "Ingress %s deleted.\n", args[0])
-	return nil
+	return trackMutation(cmd, client, id.String(), priorTaskID)
 }
 
 // --- row adapter ---

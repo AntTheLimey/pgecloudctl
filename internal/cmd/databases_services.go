@@ -20,7 +20,7 @@ func init() {
 	dbServicesCmd.AddCommand(dbServicesRemoveCmd)
 	dbServicesRemoveCmd.Flags().BoolVarP(&dbServicesRemoveYes, "yes", "y",
 		false, "Skip confirmation prompt")
-	addServiceWaitFlags(dbServicesRemoveCmd)
+	addWaitFlags(dbServicesRemoveCmd)
 }
 
 var dbServicesCmd = &cobra.Command{
@@ -150,7 +150,7 @@ func runDBServicesRemove(cmd *cobra.Command, args []string) error {
 	}
 
 	var priorTaskID string
-	if svcWait {
+	if waitFlag {
 		priorTaskID, err = newestSubjectTaskID(context.Background(), client, dbID)
 		if err != nil {
 			return err
@@ -168,7 +168,7 @@ func runDBServicesRemove(cmd *cobra.Command, args []string) error {
 
 	fmt.Fprintf(cmd.OutOrStdout(),
 		"Service type %q removal requested for database %s.\n", svcType, dbID)
-	return trackServiceMutation(cmd, client, dbID, priorTaskID)
+	return trackMutation(cmd, client, dbID, priorTaskID)
 }
 
 // --- shared helpers ---

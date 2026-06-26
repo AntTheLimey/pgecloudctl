@@ -53,10 +53,12 @@ func init() {
 	_ = clustersCreateCmd.MarkFlagRequired("cloud-account-id")
 	_ = clustersCreateCmd.MarkFlagRequired("regions")
 	_ = clustersCreateCmd.MarkFlagRequired("node-location")
+	addWaitFlags(clustersCreateCmd)
 
 	// delete flags
 	clustersDeleteCmd.Flags().BoolVarP(&clusterDeleteYes, "yes", "y",
 		false, "Skip confirmation prompt")
+	addWaitFlags(clustersDeleteCmd)
 }
 
 var clustersCmd = &cobra.Command{
@@ -206,19 +208,26 @@ func runClustersCreate(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
-	if flagOutput != "table" {
-		return output.Print(cmd.OutOrStdout(), flagOutput, resp.JSON200, nil)
-	}
-
 	c := resp.JSON200
 	if c == nil {
-		fmt.Fprintln(cmd.OutOrStdout(), "Cluster created (no details returned).")
+		// Accepted, but no body to read an id from — nothing to track.
+		if flagOutput == "table" {
+			fmt.Fprintln(cmd.OutOrStdout(),
+				"Cluster created (no details returned).")
+		}
 		return nil
 	}
 
-	fmt.Fprintf(cmd.OutOrStdout(), "Cluster %q created (id: %s, status: %s).\n",
-		c.Name, c.Id, c.Status)
-	return nil
+	if flagOutput != "table" {
+		if err := output.Print(cmd.OutOrStdout(), flagOutput, c, nil); err != nil {
+			return err
+		}
+	} else {
+		fmt.Fprintf(cmd.OutOrStdout(),
+			"Cluster %q created (id: %s, status: %s).\n",
+			c.Name, c.Id, c.Status)
+	}
+	return trackMutation(cmd, client, c.Id, "")
 }
 
 // --- delete ---
@@ -253,6 +262,15 @@ func runClustersDelete(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	var priorTaskID string
+	if waitFlag {
+		priorTaskID, err = newestSubjectTaskID(
+			context.Background(), client, id.String())
+		if err != nil {
+			return err
+		}
+	}
+
 	params := &api.DeleteClusterParams{}
 	resp, err := client.DeleteClusterWithResponse(context.Background(), id, params)
 	if err != nil {
@@ -264,7 +282,7 @@ func runClustersDelete(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Fprintf(cmd.OutOrStdout(), "Cluster %s deleted.\n", args[0])
-	return nil
+	return trackMutation(cmd, client, id.String(), priorTaskID)
 }
 
 // --- row adapter ---

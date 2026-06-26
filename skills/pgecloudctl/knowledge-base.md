@@ -26,6 +26,20 @@ or silently aborting. So scripts and agents must pass `--yes` to proceed.
 Note `services remove` is irrecoverable — it discards the service's config
 and credentials.
 
+## Asynchronous operations (`--wait`)
+
+Operations that spawn a background task — `create` and `delete` for
+databases, clusters, ingresses, and backup-stores, plus the service
+mutations (`mcp`/`rag deploy`/`update`, `services remove`) — accept
+`--wait` (with `--timeout`, default 300, and `--interval`, default 5).
+Without `--wait` the command returns as soon as the request is accepted,
+not when the work completes. With `--wait` it blocks until the task reaches
+a terminal state and the exit code reflects the outcome (0 succeeded,
+1 failed, 3 timeout). In table output, the non-wait path prints the
+`tasks list --subject-id <id>` command to monitor progress. Metadata
+commands (ssh-keys, cloud-accounts, invites, memberships, cluster shares)
+are synchronous and have no `--wait`.
+
 ---
 
 ## Commands

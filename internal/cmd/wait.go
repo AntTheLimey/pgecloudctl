@@ -16,25 +16,26 @@ import (
 // default page size silently truncating it.
 const taskListLookback = 100
 
-// Service-mutation wait flags. These are shared across all service-mutating
-// commands (mcp/rag deploy+update, services remove); only one such command
-// runs per process invocation, so a single set of package-level vars is safe.
+// Wait flags. Shared across every asynchronous command (create/delete of
+// task-backed resources, mcp/rag deploy+update, services remove); only one
+// such command runs per process invocation, so a single set of package-level
+// vars is safe.
 var (
-	svcWait         bool
-	svcWaitTimeout  int
-	svcWaitInterval int
+	waitFlag         bool
+	waitTimeoutFlag  int
+	waitIntervalFlag int
 )
 
-// addServiceWaitFlags registers --wait/--timeout/--interval on a
-// service-mutating command. Service mutations are asynchronous: the API
-// accepts the request and spawns a task, so without --wait the command exits
-// as soon as the request is accepted, not when the work completes.
-func addServiceWaitFlags(cmd *cobra.Command) {
-	cmd.Flags().BoolVar(&svcWait, "wait", false,
+// addWaitFlags registers --wait/--timeout/--interval on an asynchronous
+// command. These operations have the API accept the request and spawn a task,
+// so without --wait the command exits as soon as the request is accepted, not
+// when the work completes.
+func addWaitFlags(cmd *cobra.Command) {
+	cmd.Flags().BoolVar(&waitFlag, "wait", false,
 		"Wait for the operation's task to reach a terminal state")
-	cmd.Flags().IntVar(&svcWaitTimeout, "timeout", 300,
+	cmd.Flags().IntVar(&waitTimeoutFlag, "timeout", 300,
 		"Max seconds to wait when --wait is set")
-	cmd.Flags().IntVar(&svcWaitInterval, "interval", 5,
+	cmd.Flags().IntVar(&waitIntervalFlag, "interval", 5,
 		"Polling interval in seconds when --wait is set")
 }
 
@@ -187,22 +188,28 @@ func timeoutError(timeout int, subjectID, taskID string) error {
 	}
 }
 
-// trackServiceMutation reports how to monitor an accepted service mutation on
-// subjectID, and — when --wait is set — blocks until the spawned task reaches a
-// terminal state. priorTaskID must be the newest task for the subject captured
-// before the mutation (only meaningful when waiting).
-func trackServiceMutation(
+// trackMutation handles the asynchronous tail of a command. When --wait is
+// set it blocks until the spawned task reaches a terminal state. Otherwise, in
+// table output, it prints how to monitor the task; in machine output (json or
+// yaml) it stays silent so stdout remains parseable.
+//
+// priorTaskID must be the newest task for the subject captured before the
+// mutation (only meaningful when waiting). For a freshly created resource it
+// is "", since the new resource has no prior tasks.
+func trackMutation(
 	cmd *cobra.Command,
 	client *api.ClientWithResponses,
 	subjectID, priorTaskID string,
 ) error {
-	if svcWait {
+	if waitFlag {
 		return waitForSubjectTask(
 			cmd, client, subjectID, priorTaskID,
-			svcWaitTimeout, svcWaitInterval,
+			waitTimeoutFlag, waitIntervalFlag,
 		)
 	}
-	fmt.Fprintf(cmd.OutOrStdout(),
-		"Monitor with: pgecloudctl tasks list --subject-id %s\n", subjectID)
+	if flagOutput == "table" {
+		fmt.Fprintf(cmd.OutOrStdout(),
+			"Monitor with: pgecloudctl tasks list --subject-id %s\n", subjectID)
+	}
 	return nil
 }
