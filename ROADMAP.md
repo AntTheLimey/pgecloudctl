@@ -64,7 +64,11 @@ Items ranked by weighted score. Higher = do first.
 | AI workflow recipes | 3 | 2 | M (2) | 4.0 | Done | v0.3 — docs/guides for AI agents |
 | pgecloudctl doctor | 3 | 2 | S (1) | 8.0 | Done | v0.3 — AI self-diagnostics |
 | Multi-tenancy support | 4 | 3 | L (3) | 3.7 | Idea | Blocked on API changes |
-| PostgREST service commands | 3 | 2 | S (1) | 8.0 | Idea | Blocked on API availability |
+| Clusters update command | 4 | 5 | S (1) | 13.0 | Idea | No update cmd exists; UpdateClusterWithResponse already generated |
+| Cluster create parity (firewall/networks/nodes) | 4 | 5 | M (2) | 6.5 | Idea | create ignores FirewallRules/Networks/Nodes; client already supports |
+| Databases create — backup config | 4 | 5 | S (1) | 13.0 | Idea | Default backups block has no repository; API 400s. No flag to set backup_store_id. |
+| Re-vendor OpenAPI spec for PostgREST | 4 | 4 | S (1) | 12.0 | Idea | Blocks PostgREST cmds — vendored spec predates saas#1720; service_type enum is [mcp,rag] only, no PostgRESTServiceConfig |
+| PostgREST service commands | 3 | 3 | M (2) | 4.5 | Idea | Blocked on spec re-vendor above; then mirror databases mcp/rag |
 | MCP server for CLI | 3 | 2 | L (3) | 2.7 | Idea | Revisit if market demands it |
 
 ---
@@ -108,4 +112,58 @@ Items ranked by weighted score. Higher = do first.
 ---
 
 Post-v0.3 ideas tracked in the Idea rows above.
-Multi-tenancy and PostgREST blocked on upstream API work.
+Multi-tenancy blocked on upstream API work.
+
+---
+
+### Active initiative — cluster parity + PostgREST
+
+Found while testing PostgREST-as-a-service. Two distinct gap classes:
+the **clusters** gaps below live in the Cobra command layer
+(`internal/cmd`) only — the generated client (`internal/api`) already
+exposes every operation and field needed. The **PostgREST** gaps are
+deeper: they are blocked on the generated client, which has no
+PostgREST support at all (see prerequisite below).
+
+**Clusters create/update parity**
+
+- `clusters create` ignores `CreateClusterInput.FirewallRules`,
+  `.Networks` (cidr/subnets), `.Nodes` (instance_type, volume_size,
+  volume_iops, availability_zone), and `.BackupStoreIds`. It only
+  sends name, cloud_account_id, regions, node_location. Without
+  `backup_store_ids`, the cluster can't host a database at all —
+  `databases create` then fails `400 "backup store is not available
+  to the cluster"`.
+- No `clusters update` command exists, though
+  `UpdateClusterWithResponse` (PATCH /v1/clusters/{id}) is generated.
+  This blocked adding an `https` (:443) firewall rule to a public
+  test cluster — had to fall back to raw curl.
+- Open design question: how to express nested/repeated structures as
+  flags — repeatable structured flags
+  (`--firewall-rule name=https,port=443,sources=0.0.0.0/0`),
+  convenience scalars for the single-network/single-node case, or a
+  `--spec file.yaml` mapping to the input struct. Decide before
+  building.
+- Guardrail to encode: reject/warn on `volume_type: gp3` — it wedges
+  later firewall-rule updates (rulemaster CLOUD-480).
+
+**PostgREST service commands** (Priority 2, after integration proven)
+
+- PREREQUISITE — re-vendor the spec. The vendored
+  `openapi/pgedge.yaml` predates the PostgREST API (saas#1720). Its
+  `service_type` enum is `[mcp, rag]` only and there is no
+  `PostgRESTServiceConfig` schema, so the generated client carries
+  zero PostgREST types (`grep postgrest internal/api/` is empty).
+  Pull the updated saas OpenAPI, re-vendor `openapi/pgedge.yaml`, and
+  run `make generate` BEFORE any command work — otherwise there is no
+  `ServiceConfigServiceTypePostgrest` constant or config struct to
+  build against.
+- Add `databases postgrest deploy` / `update`, mirroring
+  `databases mcp` and `databases rag`. Maps to the `services` array
+  with `service_type: "postgrest"` and `postgrest_config`
+  (db_schemas, db_anon_role, db_pool, max_rows, jwt_secret,
+  jwt_audience, jwt_role_claim_key, cors_origins).
+- Update `databases services remove` help text — it says
+  "(mcp or rag)"; add postgrest.
+- `services` array is REPLACE semantics: any verb must re-send
+  existing services or be explicit that it replaces all.
