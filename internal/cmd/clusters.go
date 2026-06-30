@@ -28,6 +28,13 @@ var (
 // Cluster delete flags.
 var clusterDeleteYes bool
 
+// Cluster update flags.
+var (
+	clusterUpdateFirewallRules  []string
+	clusterUpdateBackupStoreIDs []string
+	clusterUpdateRegions        []string
+)
+
 func init() {
 	rootCmd.AddCommand(clustersCmd)
 	clustersCmd.AddCommand(clustersListCmd)
@@ -60,6 +67,18 @@ func init() {
 	clustersDeleteCmd.Flags().BoolVarP(&clusterDeleteYes, "yes", "y",
 		false, "Skip confirmation prompt")
 	addWaitFlags(clustersDeleteCmd)
+
+	clustersCmd.AddCommand(clustersUpdateCmd)
+	clustersUpdateCmd.Flags().StringArrayVar(&clusterUpdateFirewallRules,
+		"firewall-rule", nil,
+		"Firewall rule to append, e.g. "+
+			"name=https,port=443,sources=0.0.0.0/0 (repeatable)")
+	clustersUpdateCmd.Flags().StringSliceVar(&clusterUpdateBackupStoreIDs,
+		"backup-store-id", nil,
+		"Backup store ID to attach (repeatable)")
+	clustersUpdateCmd.Flags().StringSliceVar(&clusterUpdateRegions,
+		"regions", nil, "Replace the cluster's regions")
+	addWaitFlags(clustersUpdateCmd)
 }
 
 var clustersCmd = &cobra.Command{
@@ -278,6 +297,124 @@ func runClustersDelete(cmd *cobra.Command, args []string) error {
 
 	fmt.Fprintf(cmd.OutOrStdout(), "Cluster %s deleted.\n", args[0])
 	return trackMutation(cmd, client, id.String(), priorTaskID)
+}
+
+// --- update ---
+
+var clustersUpdateCmd = &cobra.Command{
+	Use:   "update <id>",
+	Short: "Update a cluster (append firewall rules / backup stores)",
+	Args:  cobra.ExactArgs(1),
+	RunE:  runClustersUpdate,
+}
+
+func runClustersUpdate(cmd *cobra.Command, args []string) error {
+	if len(clusterUpdateFirewallRules) == 0 &&
+		len(clusterUpdateBackupStoreIDs) == 0 &&
+		len(clusterUpdateRegions) == 0 {
+		return &ExitError{
+			msg: "clusters update: specify at least one of " +
+				"--firewall-rule, --backup-store-id, --regions",
+			code: ExitGeneral,
+		}
+	}
+
+	client, err := newAPIClient()
+	if err != nil {
+		return err
+	}
+
+	id, err := resolveClusterID(context.Background(), client, args[0])
+	if err != nil {
+		return err
+	}
+
+	rules := make([]api.ClusterFirewallRuleSettings, 0,
+		len(clusterUpdateFirewallRules))
+	for _, raw := range clusterUpdateFirewallRules {
+		r, err := parseFirewallRule(raw)
+		if err != nil {
+			return &ExitError{msg: err.Error(), code: ExitGeneral}
+		}
+		rules = append(rules, r)
+	}
+
+	getResp, err := client.GetClusterWithResponse(context.Background(), id)
+	if err != nil {
+		return fmt.Errorf("get cluster: %w", err)
+	}
+	if err := checkResponse(getResp.StatusCode(),
+		string(getResp.Body)); err != nil {
+		return err
+	}
+	if getResp.JSON200 == nil {
+		return &ExitError{msg: "cluster not found", code: ExitNotFound}
+	}
+
+	body := buildClusterUpdate(getResp.JSON200, rules,
+		clusterUpdateBackupStoreIDs, clusterUpdateRegions)
+
+	var priorTaskID string
+	if waitFlag {
+		priorTaskID, err = newestSubjectTaskID(
+			context.Background(), client, id.String())
+		if err != nil {
+			return err
+		}
+	}
+
+	resp, err := client.UpdateClusterWithResponse(
+		context.Background(), id, body)
+	if err != nil {
+		return fmt.Errorf("update cluster: %w", err)
+	}
+	if err := checkResponse(resp.StatusCode(),
+		string(resp.Body)); err != nil {
+		return err
+	}
+
+	fmt.Fprintf(cmd.OutOrStdout(), "Cluster %s updated.\n", id)
+	return trackMutation(cmd, client, id.String(), priorTaskID)
+}
+
+// buildClusterUpdate produces an UpdateClusterInput from the cluster's
+// current state, then layers on requested changes. Firewall rules and
+// backup store IDs are appended to existing values; regions replace
+// only when supplied. Fresh slices are built to avoid aliasing the
+// cluster's own slices.
+func buildClusterUpdate(c *api.Cluster,
+	addRules []api.ClusterFirewallRuleSettings,
+	addStoreIDs, regions []string) api.UpdateClusterInput {
+	in := api.UpdateClusterInput{
+		Regions:         c.Regions,
+		Networks:        c.Networks,
+		Nodes:           c.Nodes,
+		ResourceTags:    c.ResourceTags,
+		VpcAssociations: c.VpcAssociations,
+	}
+
+	rules := []api.ClusterFirewallRuleSettings{}
+	if c.FirewallRules != nil {
+		rules = append(rules, *c.FirewallRules...)
+	}
+	rules = append(rules, addRules...)
+	if len(rules) > 0 {
+		in.FirewallRules = &rules
+	}
+
+	stores := []string{}
+	if c.BackupStoreIds != nil {
+		stores = append(stores, *c.BackupStoreIds...)
+	}
+	stores = append(stores, addStoreIDs...)
+	if len(stores) > 0 {
+		in.BackupStoreIds = &stores
+	}
+
+	if len(regions) > 0 {
+		in.Regions = regions
+	}
+	return in
 }
 
 // parseFirewallRule parses a repeatable structured flag value of the

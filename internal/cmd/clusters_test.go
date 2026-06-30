@@ -66,3 +66,35 @@ func TestParseFirewallRule(t *testing.T) {
 }
 
 var _ = api.ClusterFirewallRuleSettings{} // keep api import if unused above
+
+func TestBuildClusterUpdate(t *testing.T) {
+	existingRule := api.ClusterFirewallRuleSettings{Port: 22}
+	c := &api.Cluster{
+		Regions:        []string{"us-east-1"},
+		FirewallRules:  &[]api.ClusterFirewallRuleSettings{existingRule},
+		BackupStoreIds: &[]string{"bs-existing"},
+	}
+	newRule := api.ClusterFirewallRuleSettings{Port: 443}
+
+	t.Run("appends rules and stores, keeps regions", func(t *testing.T) {
+		in := buildClusterUpdate(c,
+			[]api.ClusterFirewallRuleSettings{newRule},
+			[]string{"bs-new"}, nil)
+		if in.FirewallRules == nil || len(*in.FirewallRules) != 2 {
+			t.Fatalf("firewall rules = %v, want 2", in.FirewallRules)
+		}
+		if in.BackupStoreIds == nil || len(*in.BackupStoreIds) != 2 {
+			t.Fatalf("backup stores = %v, want 2", in.BackupStoreIds)
+		}
+		if len(in.Regions) != 1 || in.Regions[0] != "us-east-1" {
+			t.Errorf("regions = %v, want [us-east-1]", in.Regions)
+		}
+	})
+
+	t.Run("regions override when supplied", func(t *testing.T) {
+		in := buildClusterUpdate(c, nil, nil, []string{"eu-west-1"})
+		if len(in.Regions) != 1 || in.Regions[0] != "eu-west-1" {
+			t.Errorf("regions = %v, want [eu-west-1]", in.Regions)
+		}
+	})
+}
