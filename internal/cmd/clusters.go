@@ -23,6 +23,8 @@ var (
 	clusterCreateCloudAccountID string
 	clusterCreateRegions        []string
 	clusterCreateNodeLocation   string
+	clusterCreateBackupStoreIDs []string
+	clusterCreateFirewallRules  []string
 )
 
 // Cluster delete flags.
@@ -57,6 +59,13 @@ func init() {
 		"regions", nil, "Comma-separated list of regions")
 	clustersCreateCmd.Flags().StringVar(&clusterCreateNodeLocation,
 		"node-location", "", "Node location (public or private)")
+	clustersCreateCmd.Flags().StringSliceVar(
+		&clusterCreateBackupStoreIDs, "backup-store-id", nil,
+		"Backup store ID to attach (repeatable; required to host a DB)")
+	clustersCreateCmd.Flags().StringArrayVar(
+		&clusterCreateFirewallRules, "firewall-rule", nil,
+		"Firewall rule, e.g. "+
+			"name=https,port=443,sources=0.0.0.0/0 (repeatable)")
 	_ = clustersCreateCmd.MarkFlagRequired("name")
 	_ = clustersCreateCmd.MarkFlagRequired("cloud-account-id")
 	_ = clustersCreateCmd.MarkFlagRequired("regions")
@@ -214,6 +223,20 @@ func runClustersCreate(cmd *cobra.Command, _ []string) error {
 		CloudAccountId: &clusterCreateCloudAccountID,
 		Regions:        clusterCreateRegions,
 		NodeLocation:   clusterCreateNodeLocation,
+	}
+
+	if len(clusterCreateBackupStoreIDs) > 0 {
+		body.BackupStoreIds = &clusterCreateBackupStoreIDs
+	}
+	for _, raw := range clusterCreateFirewallRules {
+		r, err := parseFirewallRule(raw)
+		if err != nil {
+			return &ExitError{msg: err.Error(), code: ExitGeneral}
+		}
+		if body.FirewallRules == nil {
+			body.FirewallRules = &[]api.ClusterFirewallRuleSettings{}
+		}
+		*body.FirewallRules = append(*body.FirewallRules, r)
 	}
 
 	resp, err := client.CreateClusterWithResponse(context.Background(), body)

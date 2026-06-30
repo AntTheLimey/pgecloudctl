@@ -98,3 +98,19 @@ func TestBuildClusterUpdate(t *testing.T) {
 		}
 	})
 }
+
+func TestClusterCreateFirewallParsing(t *testing.T) {
+	// Mirrors the loop in runClustersCreate.
+	raw := []string{"name=https,port=443,sources=0.0.0.0/0"}
+	var rules []api.ClusterFirewallRuleSettings
+	for _, s := range raw {
+		r, err := parseFirewallRule(s)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		rules = append(rules, r)
+	}
+	if len(rules) != 1 || rules[0].Port != 443 {
+		t.Fatalf("rules = %v, want one rule on port 443", rules)
+	}
+}
