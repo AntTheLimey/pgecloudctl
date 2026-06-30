@@ -157,15 +157,12 @@ var databasesGetCmd = &cobra.Command{
 }
 
 func runDatabasesGet(cmd *cobra.Command, args []string) error {
-	id, err := uuid.Parse(args[0])
+	client, err := newAPIClient()
 	if err != nil {
-		return &ExitError{
-			msg:  fmt.Sprintf("invalid database ID %q: %v", args[0], err),
-			code: ExitGeneral,
-		}
+		return err
 	}
 
-	client, err := newAPIClient()
+	id, err := resolveDatabaseID(context.Background(), client, args[0])
 	if err != nil {
 		return err
 	}
@@ -268,15 +265,12 @@ var databasesUpdateCmd = &cobra.Command{
 }
 
 func runDatabasesUpdate(cmd *cobra.Command, args []string) error {
-	id, err := uuid.Parse(args[0])
+	client, err := newAPIClient()
 	if err != nil {
-		return &ExitError{
-			msg:  fmt.Sprintf("invalid database ID %q: %v", args[0], err),
-			code: ExitGeneral,
-		}
+		return err
 	}
 
-	client, err := newAPIClient()
+	id, err := resolveDatabaseID(context.Background(), client, args[0])
 	if err != nil {
 		return err
 	}
@@ -324,14 +318,6 @@ var databasesDeleteCmd = &cobra.Command{
 }
 
 func runDatabasesDelete(cmd *cobra.Command, args []string) error {
-	id, err := uuid.Parse(args[0])
-	if err != nil {
-		return &ExitError{
-			msg:  fmt.Sprintf("invalid database ID %q: %v", args[0], err),
-			code: ExitGeneral,
-		}
-	}
-
 	ok, err := confirmDestructive(cmd, dbDeleteYes,
 		fmt.Sprintf("Delete database %s? This cannot be undone.", args[0]))
 	if err != nil {
@@ -342,6 +328,11 @@ func runDatabasesDelete(cmd *cobra.Command, args []string) error {
 	}
 
 	client, err := newAPIClient()
+	if err != nil {
+		return err
+	}
+
+	id, err := resolveDatabaseID(context.Background(), client, args[0])
 	if err != nil {
 		return err
 	}

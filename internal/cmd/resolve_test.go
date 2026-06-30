@@ -56,3 +56,27 @@ func TestResolveClusterID(t *testing.T) {
 		}
 	})
 }
+
+func TestResolveDatabaseID(t *testing.T) {
+	full := "b2c3d4e5-1111-2222-3333-444455556666"
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode([]api.Database{{Id: full}})
+	}
+
+	t.Run("full uuid skips API", func(t *testing.T) {
+		// nil client proves no list call is made for a full UUID.
+		got, err := resolveDatabaseID(context.Background(), nil, full)
+		if err != nil || got.String() != full {
+			t.Fatalf("got (%q, %v), want (%q, nil)", got, err, full)
+		}
+	})
+
+	t.Run("prefix resolves via list", func(t *testing.T) {
+		client := newTestClient(t, handler)
+		got, err := resolveDatabaseID(context.Background(), client, "b2c3")
+		if err != nil || got.String() != full {
+			t.Fatalf("got (%q, %v), want (%q, nil)", got, err, full)
+		}
+	})
+}

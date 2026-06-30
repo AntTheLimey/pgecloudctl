@@ -8,7 +8,6 @@ import (
 
 	"github.com/AntTheLimey/pgecloudctl/internal/api"
 	"github.com/AntTheLimey/pgecloudctl/internal/output"
-	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 )
 
@@ -134,15 +133,12 @@ var clustersGetCmd = &cobra.Command{
 }
 
 func runClustersGet(cmd *cobra.Command, args []string) error {
-	id, err := uuid.Parse(args[0])
+	client, err := newAPIClient()
 	if err != nil {
-		return &ExitError{
-			msg:  fmt.Sprintf("invalid cluster ID %q: %v", args[0], err),
-			code: ExitGeneral,
-		}
+		return err
 	}
 
-	client, err := newAPIClient()
+	id, err := resolveClusterID(context.Background(), client, args[0])
 	if err != nil {
 		return err
 	}
@@ -242,14 +238,6 @@ var clustersDeleteCmd = &cobra.Command{
 }
 
 func runClustersDelete(cmd *cobra.Command, args []string) error {
-	id, err := uuid.Parse(args[0])
-	if err != nil {
-		return &ExitError{
-			msg:  fmt.Sprintf("invalid cluster ID %q: %v", args[0], err),
-			code: ExitGeneral,
-		}
-	}
-
 	ok, err := confirmDestructive(cmd, clusterDeleteYes,
 		fmt.Sprintf("Delete cluster %s? This cannot be undone.", args[0]))
 	if err != nil {
@@ -260,6 +248,11 @@ func runClustersDelete(cmd *cobra.Command, args []string) error {
 	}
 
 	client, err := newAPIClient()
+	if err != nil {
+		return err
+	}
+
+	id, err := resolveClusterID(context.Background(), client, args[0])
 	if err != nil {
 		return err
 	}
