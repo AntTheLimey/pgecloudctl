@@ -3,6 +3,8 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"strconv"
+	"strings"
 
 	"github.com/AntTheLimey/pgecloudctl/internal/api"
 	"github.com/AntTheLimey/pgecloudctl/internal/output"
@@ -283,6 +285,64 @@ func runClustersDelete(cmd *cobra.Command, args []string) error {
 
 	fmt.Fprintf(cmd.OutOrStdout(), "Cluster %s deleted.\n", args[0])
 	return trackMutation(cmd, client, id.String(), priorTaskID)
+}
+
+// parseFirewallRule parses a repeatable structured flag value of the
+// form "name=https,port=443,sources=0.0.0.0/0" into a
+// ClusterFirewallRuleSettings. Pairs are comma-separated; list-valued
+// keys (sources, prefix-lists, security-groups) are repeated to add
+// elements. port is required.
+func parseFirewallRule(s string) (api.ClusterFirewallRuleSettings, error) {
+	var rule api.ClusterFirewallRuleSettings
+	portSet := false
+	for _, pair := range strings.Split(s, ",") {
+		pair = strings.TrimSpace(pair)
+		if pair == "" {
+			continue
+		}
+		k, v, ok := strings.Cut(pair, "=")
+		if !ok {
+			return rule, fmt.Errorf(
+				"firewall-rule: %q is not key=value", pair)
+		}
+		k, v = strings.TrimSpace(k), strings.TrimSpace(v)
+		switch k {
+		case "name":
+			name := v
+			rule.Name = &name
+		case "port":
+			p, err := strconv.Atoi(v)
+			if err != nil {
+				return rule, fmt.Errorf(
+					"firewall-rule: port %q is not an integer", v)
+			}
+			rule.Port = p
+			portSet = true
+		case "sources":
+			rule.Sources = appendStrPtr(rule.Sources, v)
+		case "prefix-lists":
+			rule.PrefixLists = appendStrPtr(rule.PrefixLists, v)
+		case "security-groups":
+			rule.SecurityGroups = appendStrPtr(rule.SecurityGroups, v)
+		default:
+			return rule, fmt.Errorf(
+				"firewall-rule: unknown key %q (valid: name, port, "+
+					"sources, prefix-lists, security-groups)", k)
+		}
+	}
+	if !portSet {
+		return rule, fmt.Errorf("firewall-rule: port is required")
+	}
+	return rule, nil
+}
+
+// appendStrPtr appends v to the slice behind p, allocating if p is nil.
+func appendStrPtr(p *[]string, v string) *[]string {
+	if p == nil {
+		return &[]string{v}
+	}
+	*p = append(*p, v)
+	return p
 }
 
 // --- row adapter ---
