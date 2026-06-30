@@ -19,9 +19,10 @@ var (
 
 // Database create flags.
 var (
-	dbCreateName      string
-	dbCreateClusterID string
-	dbCreatePgVersion string
+	dbCreateName          string
+	dbCreateClusterID     string
+	dbCreatePgVersion     string
+	dbCreateBackupStoreID string
 )
 
 // Database update flags.
@@ -64,6 +65,9 @@ func init() {
 		"Cluster ID to deploy the database on")
 	databasesCreateCmd.Flags().StringVar(&dbCreatePgVersion, "pg-version", "",
 		"PostgreSQL version (e.g. 16)")
+	databasesCreateCmd.Flags().StringVar(&dbCreateBackupStoreID,
+		"backup-store-id", "",
+		"Backup store ID to use for this database's backups")
 	_ = databasesCreateCmd.MarkFlagRequired("name")
 	_ = databasesCreateCmd.MarkFlagRequired("cluster-id")
 	addWaitFlags(databasesCreateCmd)
@@ -210,6 +214,22 @@ var databasesCreateCmd = &cobra.Command{
 	RunE:  runDatabasesCreate,
 }
 
+// buildDatabaseBackups builds a Backups block with a single repository
+// pointing at the given backup store. NOTE: Provider is set to
+// "pgbackrest" and BackupConfig.Id is left empty pending live-API
+// verification (see plan Task 6, Step 7) — adjust if the API rejects
+// these.
+func buildDatabaseBackups(storeID string) *api.Backups {
+	return &api.Backups{
+		Provider: "pgbackrest",
+		Config: &[]api.BackupConfig{{
+			Repositories: &[]api.BackupRepository{{
+				BackupStoreId: &storeID,
+			}},
+		}},
+	}
+}
+
 func runDatabasesCreate(cmd *cobra.Command, _ []string) error {
 	client, err := newAPIClient()
 	if err != nil {
@@ -222,6 +242,9 @@ func runDatabasesCreate(cmd *cobra.Command, _ []string) error {
 	}
 	if dbCreatePgVersion != "" {
 		body.PgVersion = &dbCreatePgVersion
+	}
+	if dbCreateBackupStoreID != "" {
+		body.Backups = buildDatabaseBackups(dbCreateBackupStoreID)
 	}
 
 	resp, err := client.CreateDatabaseWithResponse(context.Background(), body)
