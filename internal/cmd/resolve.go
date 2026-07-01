@@ -13,9 +13,13 @@ import (
 // input. Errors if input matches zero or more than one ID. kind names
 // the resource for error messages (e.g. "cluster").
 func resolveIDPrefix(input string, ids []string, kind string) (string, error) {
+	// Match case-insensitively: UUIDs are canonical lowercase but the
+	// full-UUID path (uuid.Parse) accepts any case, so prefix matching
+	// must too, or "A1B2" would fail to match "a1b2..." inconsistently.
+	lower := strings.ToLower(input)
 	var matches []string
 	for _, id := range ids {
-		if strings.HasPrefix(id, input) {
+		if strings.HasPrefix(strings.ToLower(id), lower) {
 			matches = append(matches, id)
 		}
 	}

@@ -31,6 +31,12 @@ func TestResolveIDPrefix(t *testing.T) {
 			t.Errorf("expected not-found error")
 		}
 	})
+	t.Run("uppercase prefix matches lowercase id", func(t *testing.T) {
+		got, err := resolveIDPrefix("B9", ids, "cluster")
+		if err != nil || got != ids[2] {
+			t.Fatalf("got (%q, %v), want (%q, nil)", got, err, ids[2])
+		}
+	})
 }
 
 func TestResolveClusterID(t *testing.T) {
