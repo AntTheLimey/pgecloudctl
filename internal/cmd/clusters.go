@@ -221,6 +221,10 @@ var clustersCreateCmd = &cobra.Command{
 }
 
 func runClustersCreate(cmd *cobra.Command, _ []string) error {
+	if w := backupStoreWarning(clusterCreateBackupStoreIDs); w != "" {
+		fmt.Fprintln(cmd.ErrOrStderr(), w)
+	}
+
 	client, err := newAPIClient()
 	if err != nil {
 		return err
@@ -533,6 +537,21 @@ func validFirewallRuleName(name string) bool {
 	default:
 		return false
 	}
+}
+
+// backupStoreWarning returns a caution when a cluster is being created with no
+// backup store. A storeless cluster provisions fine but cannot host a database
+// (database create fails: "at least 1 repository must be defined for provider:
+// pgbackrest"), so it is a dead-end until a store is attached. Returns "" when
+// at least one store is given. The CLI only warns — the API stays permissive so
+// the create-then-attach flow (clusters update --backup-store-id) remains valid.
+func backupStoreWarning(storeIDs []string) string {
+	if len(storeIDs) > 0 {
+		return ""
+	}
+	return "warning: cluster has no backup store; it cannot host a " +
+		"database until one is attached " +
+		"(--backup-store-id or `clusters update`)"
 }
 
 // appendStrPtr appends v to the slice behind p, allocating if p is nil.

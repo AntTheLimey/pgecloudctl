@@ -6,6 +6,15 @@ import (
 	"github.com/AntTheLimey/pgecloudctl/internal/api"
 )
 
+func TestBackupStoreWarning(t *testing.T) {
+	if w := backupStoreWarning([]string{"bs-abc"}); w != "" {
+		t.Errorf("with a store, want empty warning, got %q", w)
+	}
+	if w := backupStoreWarning(nil); w == "" {
+		t.Error("without a store, want a non-empty warning, got empty")
+	}
+}
+
 func strSlice(p *[]string) []string {
 	if p == nil {
 		return nil
