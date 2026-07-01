@@ -840,7 +840,13 @@ git commit -m "feat: add --backup-store-id and --firewall-rule to clusters creat
 
 ---
 
-### Task 6: `databases create --backup-store-id`
+### Task 6: `databases create --backup-store-id` — REVERTED, do not implement
+
+> **Do not implement this task.** It was built then reverted: a
+> database inherits its backup store from its cluster, so there is no
+> DB-level backup-store input. The real fix is the cluster-level
+> `--backup-store-id` (Task 5) plus a storeless-cluster warning on
+> `clusters create`. The steps below are retained only for the record.
 
 Add `--backup-store-id` to `databases create`, building a `Backups`
 block with one repository referencing the store. The exact minimal

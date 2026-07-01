@@ -12,7 +12,9 @@ is independent plumbing. All four are command-layer work in
 every operation and field needed.
 
 1. `clusters update <id>` — new command (PATCH /v1/clusters/{id}).
-2. `databases create --backup-store-id` — stop create 400ing.
+2. ~~`databases create --backup-store-id`~~ — REVERTED / removed from
+   scope. A database inherits its backup store from the cluster; there
+   is no DB-level backup-store input. See section 3.
 3. Short UUID prefixes — clusters + databases `get`/`delete`/`update`.
 4. `clusters create` parity — add `--backup-store-id` + `--firewall-rule`.
 
@@ -57,7 +59,7 @@ A small helper in `internal/cmd` that turns a repeatable
   the first `=` per pair. Recognized keys: `name`, `port`,
   `sources`, `prefix-lists`, `security-groups`. `port` parses to int;
   list-valued keys (`sources`, `prefix-lists`, `security-groups`)
-  split on a secondary separator.
+  are repeated to accumulate values.
 - **Separator (decided): repeat the key.** Values use `,` between
   pairs, so a list-valued key cannot also use `,` internally. Instead
   of inventing an inner separator, a list-valued key is repeated and
@@ -88,7 +90,16 @@ string-in / struct-out, table-driven.
 - At least one mutating flag must be supplied; error otherwise so an
   empty update can't silently re-PATCH current state.
 
-### 3. `databases create --backup-store-id`
+### 3. `databases create --backup-store-id` — REVERTED (not shipped)
+
+> This section is retained for the record. It was implemented then
+> reverted: a database **inherits** its backup store from its cluster,
+> so there is no DB-level backup-store input. A storeless cluster
+> simply can't host a database (create fails: "at least 1 repository
+> must be defined for provider: pgbackrest"). The fix is the
+> cluster-level `--backup-store-id` (sections above) plus the
+> storeless-cluster warning on `clusters create`. Do not implement the
+> below.
 
 `internal/cmd/databases.go`.
 
