@@ -28,7 +28,10 @@ var (
 )
 
 // Cluster delete flags.
-var clusterDeleteYes bool
+var (
+	clusterDeleteYes   bool
+	clusterDeleteForce bool
+)
 
 // Cluster update flags.
 var (
@@ -76,6 +79,9 @@ func init() {
 	// delete flags
 	clustersDeleteCmd.Flags().BoolVarP(&clusterDeleteYes, "yes", "y",
 		false, "Skip confirmation prompt")
+	clustersDeleteCmd.Flags().BoolVar(&clusterDeleteForce, "force", false,
+		"Also delete all databases and cloud infrastructure, "+
+			"bypassing status and database-existence checks")
 	addWaitFlags(clustersDeleteCmd)
 
 	clustersCmd.AddCommand(clustersUpdateCmd)
@@ -282,8 +288,13 @@ var clustersDeleteCmd = &cobra.Command{
 }
 
 func runClustersDelete(cmd *cobra.Command, args []string) error {
-	ok, err := confirmDestructive(cmd, clusterDeleteYes,
-		fmt.Sprintf("Delete cluster %s? This cannot be undone.", args[0]))
+	prompt := fmt.Sprintf("Delete cluster %s? This cannot be undone.", args[0])
+	if clusterDeleteForce {
+		prompt = fmt.Sprintf(
+			"Force-delete cluster %s AND all its databases and cloud "+
+				"infrastructure? This cannot be undone.", args[0])
+	}
+	ok, err := confirmDestructive(cmd, clusterDeleteYes, prompt)
 	if err != nil {
 		return err
 	}
@@ -311,6 +322,9 @@ func runClustersDelete(cmd *cobra.Command, args []string) error {
 	}
 
 	params := &api.DeleteClusterParams{}
+	if clusterDeleteForce {
+		params.Force = &clusterDeleteForce
+	}
 	resp, err := client.DeleteClusterWithResponse(context.Background(), id, params)
 	if err != nil {
 		return fmt.Errorf("delete cluster: %w", err)
