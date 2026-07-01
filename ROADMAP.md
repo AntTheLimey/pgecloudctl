@@ -130,10 +130,14 @@ PostgREST support at all (see prerequisite below).
 - `clusters create` ignores `CreateClusterInput.FirewallRules`,
   `.Networks` (cidr/subnets), `.Nodes` (instance_type, volume_size,
   volume_iops, availability_zone), and `.BackupStoreIds`. It only
-  sends name, cloud_account_id, regions, node_location. Without
-  `backup_store_ids`, the cluster can't host a database at all —
-  `databases create` then fails `400 "backup store is not available
-  to the cluster"`.
+  sends name, cloud_account_id, regions, node_location. A cluster with
+  no `backup_store_ids` provisions fine but can't host a database:
+  verified live 2026-07-01, `databases create` then fails `400
+  "invalid backup options: at least 1 repository must be defined for
+  provider: pgbackrest"` (the DB derives its backup repository from the
+  cluster's store — it has no store to derive from). CLI now warns on
+  storeless `clusters create`; API stays permissive so create-then-
+  attach (`clusters update --backup-store-id`) remains valid.
 - No `clusters update` command exists, though
   `UpdateClusterWithResponse` (PATCH /v1/clusters/{id}) is generated.
   This blocked adding an `https` (:443) firewall rule to a public
