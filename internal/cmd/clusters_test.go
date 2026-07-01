@@ -38,7 +38,7 @@ func TestParseFirewallRule(t *testing.T) {
 	})
 
 	t.Run("repeated key accumulates sources", func(t *testing.T) {
-		r, err := parseFirewallRule("port=22,sources=10.0.0.0/8,sources=192.168.0.0/16")
+		r, err := parseFirewallRule("name=ssh,port=22,sources=10.0.0.0/8,sources=192.168.0.0/16")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -52,9 +52,11 @@ func TestParseFirewallRule(t *testing.T) {
 		in   string
 	}{
 		{"missing port", "name=https,sources=0.0.0.0/0"},
-		{"non-int port", "port=https"},
-		{"unknown key", "port=443,colour=red"},
-		{"not key=value", "port=443,bogus"},
+		{"non-int port", "name=https,port=https"},
+		{"unknown key", "name=https,port=443,colour=red"},
+		{"not key=value", "name=https,port=443,bogus"},
+		{"missing name", "port=443,sources=0.0.0.0/0"},
+		{"invalid name", "name=pg,port=5432,sources=0.0.0.0/0"},
 	}
 	for _, tc := range errCases {
 		t.Run(tc.name, func(t *testing.T) {

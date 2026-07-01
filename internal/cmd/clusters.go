@@ -64,8 +64,9 @@ func init() {
 		"Backup store ID to attach (repeatable; required to host a DB)")
 	clustersCreateCmd.Flags().StringArrayVar(
 		&clusterCreateFirewallRules, "firewall-rule", nil,
-		"Firewall rule, e.g. "+
-			"name=https,port=443,sources=0.0.0.0/0 (repeatable)")
+		"Firewall rule (repeatable). name must be one of "+
+			"http, https, postgres, ssh. "+
+			"e.g. name=https,port=443,sources=0.0.0.0/0")
 	_ = clustersCreateCmd.MarkFlagRequired("name")
 	_ = clustersCreateCmd.MarkFlagRequired("cloud-account-id")
 	_ = clustersCreateCmd.MarkFlagRequired("regions")
@@ -80,8 +81,9 @@ func init() {
 	clustersCmd.AddCommand(clustersUpdateCmd)
 	clustersUpdateCmd.Flags().StringArrayVar(&clusterUpdateFirewallRules,
 		"firewall-rule", nil,
-		"Firewall rule to append, e.g. "+
-			"name=https,port=443,sources=0.0.0.0/0 (repeatable)")
+		"Firewall rule to append (repeatable). name must be one of "+
+			"http, https, postgres, ssh. "+
+			"e.g. name=https,port=443,sources=0.0.0.0/0")
 	clustersUpdateCmd.Flags().StringSliceVar(&clusterUpdateBackupStoreIDs,
 		"backup-store-id", nil,
 		"Backup store ID to attach (repeatable)")
@@ -486,7 +488,37 @@ func parseFirewallRule(s string) (api.ClusterFirewallRuleSettings, error) {
 	if !portSet {
 		return rule, fmt.Errorf("firewall-rule: port is required")
 	}
+	name := ""
+	if rule.Name != nil {
+		name = *rule.Name
+	}
+	switch {
+	case name == "":
+		return rule, fmt.Errorf(
+			"firewall-rule: name is required (one of: %s)",
+			validFirewallRuleNames)
+	case !validFirewallRuleName(name):
+		return rule, fmt.Errorf(
+			"firewall-rule: name %q is not a valid rule type (one of: %s)",
+			name, validFirewallRuleNames)
+	}
 	return rule, nil
+}
+
+// validFirewallRuleNames is the set of rule names the Cloud API accepts for a
+// firewall rule (saas internal/starfleet/clusters/cluster_validator.go). The
+// OpenAPI spec types this field as a free-form string with no enum, so the CLI
+// hardcodes the set to give a clear client-side error instead of an opaque API
+// 400. Keep in sync with the server; tracked by CLOUD spec bug.
+const validFirewallRuleNames = "http, https, postgres, ssh"
+
+func validFirewallRuleName(name string) bool {
+	switch name {
+	case "postgres", "https", "http", "ssh":
+		return true
+	default:
+		return false
+	}
 }
 
 // appendStrPtr appends v to the slice behind p, allocating if p is nil.
