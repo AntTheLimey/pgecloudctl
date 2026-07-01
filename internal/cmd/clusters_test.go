@@ -65,8 +65,6 @@ func TestParseFirewallRule(t *testing.T) {
 	}
 }
 
-var _ = api.ClusterFirewallRuleSettings{} // keep api import if unused above
-
 func TestBuildClusterUpdate(t *testing.T) {
 	existingRule := api.ClusterFirewallRuleSettings{Port: 22}
 	c := &api.Cluster{
