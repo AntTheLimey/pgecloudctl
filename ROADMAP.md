@@ -56,7 +56,7 @@ Items ranked by weighted score. Higher = do first.
 | YAML output format | 2 | 2 | S (1) | 6.0 | Done | v0.2 |
 | --verbose HTTP tracing | 3 | 2 | S (1) | 8.0 | Done | v0.2 — debugging |
 | Install script | 2 | 2 | S (1) | 6.0 | Done | v0.2 |
-| UUID prefix matching | 3 | 2 | S (1) | 8.0 | Idea | v0.2 — accept short IDs like Docker does |
+| UUID prefix matching | 3 | 2 | S (1) | 8.0 | Done | v0.4 — clusters/databases get/delete/update accept unique ID prefixes |
 | Command-level tests | 3 | 3 | M (2) | 4.5 | Done | v0.2 — checkResponse, buildServiceList, wait loop |
 | --no-color wiring + color output | 2 | 2 | S (1) | 6.0 | Done | v0.2 — flags declared but not yet functional |
 | llms.txt | 4 | 3 | M (2) | 5.5 | Done | v0.3 — AI discoverability |
@@ -64,9 +64,9 @@ Items ranked by weighted score. Higher = do first.
 | AI workflow recipes | 3 | 2 | M (2) | 4.0 | Done | v0.3 — docs/guides for AI agents |
 | pgecloudctl doctor | 3 | 2 | S (1) | 8.0 | Done | v0.3 — AI self-diagnostics |
 | Multi-tenancy support | 4 | 3 | L (3) | 3.7 | Idea | Blocked on API changes |
-| Clusters update command | 4 | 5 | S (1) | 13.0 | Idea | No update cmd exists; UpdateClusterWithResponse already generated |
-| Cluster create parity (firewall/networks/nodes) | 4 | 5 | M (2) | 6.5 | Idea | create ignores FirewallRules/Networks/Nodes; client already supports |
-| Databases create — backup config | 4 | 5 | S (1) | 13.0 | Idea | Default backups block has no repository; API 400s. No flag to set backup_store_id. |
+| Clusters update command | 4 | 5 | S (1) | 13.0 | Done | v0.4 — read-modify-write; --firewall-rule/--backup-store-id/--regions |
+| Cluster create parity (firewall + backup-store) | 4 | 5 | M (2) | 6.5 | Done | v0.4 — create now sends --firewall-rule + --backup-store-id; node/network flags deferred |
+| ~~Databases create — backup config~~ | 4 | 5 | S (1) | 13.0 | Won't do | Misdiagnosis: a DB inherits its backup store from the cluster — there is no DB-level backup_store_id. The 400 was the cluster lacking backup_store_ids, fixed by cluster create/update parity above. |
 | Re-vendor OpenAPI spec for PostgREST | 4 | 4 | S (1) | 12.0 | Idea | Blocks PostgREST cmds — vendored spec predates saas#1720; service_type enum is [mcp,rag] only, no PostgRESTServiceConfig |
 | PostgREST service commands | 3 | 3 | M (2) | 4.5 | Idea | Blocked on spec re-vendor above; then mirror databases mcp/rag |
 | MCP server for CLI | 3 | 2 | L (3) | 2.7 | Idea | Revisit if market demands it |
