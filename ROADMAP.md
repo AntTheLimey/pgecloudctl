@@ -109,47 +109,42 @@ Items ranked by weighted score. Higher = do first.
 - AI workflow recipes
 - pgecloudctl doctor
 
+**v0.4** (PR #17 — cluster/database parity, live-verified 2026-07-01)
+
+- Clusters update command (read-modify-write; --firewall-rule /
+  --backup-store-id / --regions)
+- Cluster create parity — --backup-store-id + --firewall-rule
+- Short UUID prefixes (clusters/databases get/delete/update)
+- Clusters delete --force (cascade databases + infrastructure)
+- Firewall-rule name validation (http/https/postgres/ssh)
+- Storeless-cluster warning on clusters create
+
 ---
 
-Post-v0.3 ideas tracked in the Idea rows above.
+Post-v0.4 ideas tracked in the Idea rows above.
 Multi-tenancy blocked on upstream API work.
 
 ---
 
-### Active initiative — cluster parity + PostgREST
+### Active initiative — PostgREST service commands (blocked)
 
-Found while testing PostgREST-as-a-service. Two distinct gap classes:
-the **clusters** gaps below live in the Cobra command layer
-(`internal/cmd`) only — the generated client (`internal/api`) already
-exposes every operation and field needed. The **PostgREST** gaps are
-deeper: they are blocked on the generated client, which has no
-PostgREST support at all (see prerequisite below).
+Found while testing PostgREST-as-a-service. Cluster create/update
+parity **shipped in v0.4** (PR #17); the flag-style design question was
+settled on repeatable structured flags. Deferred from that work:
 
-**Clusters create/update parity**
+- Node/network hardware flags on `clusters create` (`--node`,
+  `--network`: instance_type, volume_size, volume_iops,
+  availability_zone, cidr/subnets) and a `--spec file.yaml`
+  full-fidelity mode.
+- Guardrail to encode when node flags land: reject/warn on
+  `volume_type: gp3` — it wedges later firewall-rule updates
+  (rulemaster CLOUD-480).
+- Firewall-rule name enum (http/https/postgres/ssh) is hardcoded in
+  the CLI pending CLOUD-542 (spec omits it); drop the hardcode once the
+  spec carries the enum and the client is regenerated.
 
-- `clusters create` ignores `CreateClusterInput.FirewallRules`,
-  `.Networks` (cidr/subnets), `.Nodes` (instance_type, volume_size,
-  volume_iops, availability_zone), and `.BackupStoreIds`. It only
-  sends name, cloud_account_id, regions, node_location. A cluster with
-  no `backup_store_ids` provisions fine but can't host a database:
-  verified live 2026-07-01, `databases create` then fails `400
-  "invalid backup options: at least 1 repository must be defined for
-  provider: pgbackrest"` (the DB derives its backup repository from the
-  cluster's store — it has no store to derive from). CLI now warns on
-  storeless `clusters create`; API stays permissive so create-then-
-  attach (`clusters update --backup-store-id`) remains valid.
-- No `clusters update` command exists, though
-  `UpdateClusterWithResponse` (PATCH /v1/clusters/{id}) is generated.
-  This blocked adding an `https` (:443) firewall rule to a public
-  test cluster — had to fall back to raw curl.
-- Open design question: how to express nested/repeated structures as
-  flags — repeatable structured flags
-  (`--firewall-rule name=https,port=443,sources=0.0.0.0/0`),
-  convenience scalars for the single-network/single-node case, or a
-  `--spec file.yaml` mapping to the input struct. Decide before
-  building.
-- Guardrail to encode: reject/warn on `volume_type: gp3` — it wedges
-  later firewall-rule updates (rulemaster CLOUD-480).
+The **PostgREST** commands remain blocked on the generated client,
+which has no PostgREST support at all (see prerequisite below).
 
 **PostgREST service commands** (Priority 2, after integration proven)
 
