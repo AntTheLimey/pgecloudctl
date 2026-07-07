@@ -79,8 +79,7 @@ are synchronous and have no `--wait`.
   `region=...,cidr=10.4.0.0/16,`
   `public-subnets=10.4.1.0/24,private-subnets=10.4.128.0/24`),
   `--node` (repeatable;
-  `name=n1,region=...,instance-type=r7g.medium,volume-size=30`;
-  volume-type gp3 rejected — CLOUD-480),
+  `name=n1,region=...,instance-type=r7g.medium,volume-size=30`),
   `--instance-type` + `--volume-size` (shorthand for --node, one node
   per region), `--wait`/`--timeout`/`--interval`;
   region= may be omitted on single-region clusters;

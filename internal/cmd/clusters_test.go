@@ -260,14 +260,11 @@ func TestParseClusterNode(t *testing.T) {
 			wantInstance:  "r7g.medium",
 		},
 		{
-			name:    "gp3 rejected (CLOUD-480)",
-			in:      "name=n1,region=us-east-1,volume-type=gp3",
-			wantErr: "gp3",
-		},
-		{
-			name:    "gp3 rejected case-insensitively",
-			in:      "name=n1,region=us-east-1,volume-type=GP3",
-			wantErr: "gp3",
+			name:       "gp3 accepted (CLOUD-480 fixed)",
+			in:         "name=n1,region=us-east-1,volume-type=gp3",
+			wantName:   "n1",
+			wantRegion: "us-east-1",
+			wantType:   "gp3",
 		},
 		{
 			name:    "region required on multi-region clusters",
@@ -418,8 +415,8 @@ func TestBuildCreateNodes(t *testing.T) {
 			wantErr:      true,
 		},
 		{
-			name:      "parse errors propagate (gp3)",
-			nodeFlags: []string{"volume-type=gp3"},
+			name:      "parse errors propagate",
+			nodeFlags: []string{"volume-size=big"},
 			regions:   []string{"us-east-1"},
 			wantErr:   true,
 		},
@@ -474,8 +471,8 @@ func TestBuildCreateNodes(t *testing.T) {
 				}
 				if w.volumeTypeNil && n.VolumeType != nil {
 					t.Errorf("node[%d] volume type = %q, want unset "+
-						"(server defaults to gp2; never gp3 per "+
-						"CLOUD-480)", i, str(n.VolumeType))
+						"(shorthand leaves it to the server default)",
+						i, str(n.VolumeType))
 				}
 			}
 		})
