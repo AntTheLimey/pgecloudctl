@@ -25,6 +25,10 @@ var (
 	clusterCreateNodeLocation   string
 	clusterCreateBackupStoreIDs []string
 	clusterCreateFirewallRules  []string
+	clusterCreateNetworks       []string
+	clusterCreateNodes          []string
+	clusterCreateInstanceType   string
+	clusterCreateVolumeSize     int
 )
 
 // Cluster delete flags.
@@ -70,6 +74,24 @@ func init() {
 		"Firewall rule (repeatable). name must be one of "+
 			"http, https, postgres, ssh. "+
 			"e.g. name=https,port=443,sources=0.0.0.0/0")
+	clustersCreateCmd.Flags().StringArrayVar(
+		&clusterCreateNetworks, "network", nil,
+		"Network settings (repeatable, one per region). "+
+			"e.g. region=us-east-1,cidr=10.4.0.0/16,"+
+			"public-subnets=10.4.1.0/24,private-subnets=10.4.128.0/24")
+	clustersCreateCmd.Flags().StringArrayVar(
+		&clusterCreateNodes, "node", nil,
+		"Node settings (repeatable). "+
+			"e.g. name=n1,region=us-east-1,instance-type=r7g.medium,"+
+			"volume-size=30 (volume-type gp3 is rejected; see CLOUD-480)")
+	clustersCreateCmd.Flags().StringVar(&clusterCreateInstanceType,
+		"instance-type", "",
+		"Instance type for all nodes (shorthand for --node; "+
+			"creates one node per region)")
+	clustersCreateCmd.Flags().IntVar(&clusterCreateVolumeSize,
+		"volume-size", 0,
+		"Volume size in GB for all nodes (shorthand for --node; "+
+			"creates one node per region)")
 	_ = clustersCreateCmd.MarkFlagRequired("name")
 	_ = clustersCreateCmd.MarkFlagRequired("cloud-account-id")
 	_ = clustersCreateCmd.MarkFlagRequired("regions")
@@ -220,16 +242,9 @@ var clustersCreateCmd = &cobra.Command{
 	RunE:  runClustersCreate,
 }
 
-func runClustersCreate(cmd *cobra.Command, _ []string) error {
-	if w := backupStoreWarning(clusterCreateBackupStoreIDs); w != "" {
-		fmt.Fprintln(cmd.ErrOrStderr(), w)
-	}
-
-	client, err := newAPIClient()
-	if err != nil {
-		return err
-	}
-
+// buildClusterCreateBody assembles the create-cluster request from the
+// clusters create flag values.
+func buildClusterCreateBody() (api.CreateClusterJSONRequestBody, error) {
 	body := api.CreateClusterJSONRequestBody{
 		Name:           clusterCreateName,
 		CloudAccountId: &clusterCreateCloudAccountID,
@@ -243,12 +258,48 @@ func runClustersCreate(cmd *cobra.Command, _ []string) error {
 	for _, raw := range clusterCreateFirewallRules {
 		r, err := parseFirewallRule(raw)
 		if err != nil {
-			return &ExitError{msg: err.Error(), code: ExitGeneral}
+			return body, err
 		}
 		if body.FirewallRules == nil {
 			body.FirewallRules = &[]api.ClusterFirewallRuleSettings{}
 		}
 		*body.FirewallRules = append(*body.FirewallRules, r)
+	}
+
+	networks, err := buildCreateNetworks(clusterCreateNetworks,
+		clusterCreateRegions)
+	if err != nil {
+		return body, err
+	}
+	if len(networks) > 0 {
+		body.Networks = &networks
+	}
+
+	nodes, err := buildCreateNodes(clusterCreateNodes,
+		clusterCreateInstanceType, clusterCreateVolumeSize,
+		clusterCreateRegions)
+	if err != nil {
+		return body, err
+	}
+	if len(nodes) > 0 {
+		body.Nodes = &nodes
+	}
+	return body, nil
+}
+
+func runClustersCreate(cmd *cobra.Command, _ []string) error {
+	if w := backupStoreWarning(clusterCreateBackupStoreIDs); w != "" {
+		fmt.Fprintln(cmd.ErrOrStderr(), w)
+	}
+
+	body, err := buildClusterCreateBody()
+	if err != nil {
+		return &ExitError{msg: err.Error(), code: ExitGeneral}
+	}
+
+	client, err := newAPIClient()
+	if err != nil {
+		return err
 	}
 
 	resp, err := client.CreateClusterWithResponse(context.Background(), body)
@@ -537,6 +588,196 @@ func validFirewallRuleName(name string) bool {
 	default:
 		return false
 	}
+}
+
+// defaultRegionFor returns the region to assume when a structured flag
+// omits region=: the sole --regions value, or "" when the cluster spans
+// multiple regions and the key must be explicit.
+func defaultRegionFor(regions []string) string {
+	if len(regions) == 1 {
+		return regions[0]
+	}
+	return ""
+}
+
+// parseClusterNetwork parses a repeatable --network flag value of the
+// form "region=us-east-1,cidr=10.4.0.0/16,public-subnets=10.4.1.0/24"
+// into ClusterNetworkSettings. List-valued keys (public-subnets,
+// private-subnets) are repeated to add elements. region may be omitted
+// only on single-region clusters.
+func parseClusterNetwork(s, defaultRegion string) (
+	api.ClusterNetworkSettings, error) {
+	var n api.ClusterNetworkSettings
+	for _, pair := range strings.Split(s, ",") {
+		pair = strings.TrimSpace(pair)
+		if pair == "" {
+			continue
+		}
+		k, v, ok := strings.Cut(pair, "=")
+		if !ok {
+			return n, fmt.Errorf("network: %q is not key=value", pair)
+		}
+		k, v = strings.TrimSpace(k), strings.TrimSpace(v)
+		switch k {
+		case "region":
+			n.Region = v
+		case "cidr":
+			cidr := v
+			n.Cidr = &cidr
+		case "public-subnets":
+			n.PublicSubnets = appendStrPtr(n.PublicSubnets, v)
+		case "private-subnets":
+			n.PrivateSubnets = appendStrPtr(n.PrivateSubnets, v)
+		default:
+			return n, fmt.Errorf(
+				"network: unknown key %q (valid: region, cidr, "+
+					"public-subnets, private-subnets)", k)
+		}
+	}
+	if n.Region == "" {
+		n.Region = defaultRegion
+	}
+	if n.Region == "" {
+		return n, fmt.Errorf(
+			"network: region is required on multi-region clusters")
+	}
+	return n, nil
+}
+
+// parseClusterNode parses a repeatable --node flag value of the form
+// "name=n1,region=us-east-1,instance-type=r7g.medium,volume-size=30"
+// into ClusterNodeSettings. region may be omitted only on single-region
+// clusters. volume-type gp3 is rejected: gp3 nodes wedge later
+// firewall-rule updates and leave the cluster degraded (CLOUD-480).
+func parseClusterNode(s, defaultRegion string) (
+	api.ClusterNodeSettings, error) {
+	var n api.ClusterNodeSettings
+	for _, pair := range strings.Split(s, ",") {
+		pair = strings.TrimSpace(pair)
+		if pair == "" {
+			continue
+		}
+		k, v, ok := strings.Cut(pair, "=")
+		if !ok {
+			return n, fmt.Errorf("node: %q is not key=value", pair)
+		}
+		k, v = strings.TrimSpace(k), strings.TrimSpace(v)
+		switch k {
+		case "name":
+			name := v
+			n.Name = &name
+		case "region":
+			n.Region = v
+		case "instance-type":
+			it := v
+			n.InstanceType = &it
+		case "volume-size":
+			size, err := strconv.Atoi(v)
+			if err != nil {
+				return n, fmt.Errorf(
+					"node: volume-size %q is not an integer", v)
+			}
+			n.VolumeSize = &size
+		case "volume-iops":
+			iops, err := strconv.Atoi(v)
+			if err != nil {
+				return n, fmt.Errorf(
+					"node: volume-iops %q is not an integer", v)
+			}
+			n.VolumeIops = &iops
+		case "volume-type":
+			if strings.EqualFold(v, "gp3") {
+				return n, fmt.Errorf(
+					"node: volume-type gp3 is not supported — gp3 " +
+						"wedges firewall-rule updates and leaves the " +
+						"cluster degraded (CLOUD-480); omit volume-type " +
+						"to use the default (gp2)")
+			}
+			vt := v
+			n.VolumeType = &vt
+		case "availability-zone":
+			az := v
+			n.AvailabilityZone = &az
+		default:
+			return n, fmt.Errorf(
+				"node: unknown key %q (valid: name, region, "+
+					"instance-type, volume-size, volume-iops, "+
+					"volume-type, availability-zone)", k)
+		}
+	}
+	if n.Region == "" {
+		n.Region = defaultRegion
+	}
+	if n.Region == "" {
+		return n, fmt.Errorf(
+			"node: region is required on multi-region clusters")
+	}
+	return n, nil
+}
+
+// buildCreateNetworks parses all --network values, defaulting region on
+// single-region clusters.
+func buildCreateNetworks(raw, regions []string) (
+	[]api.ClusterNetworkSettings, error) {
+	if len(raw) == 0 {
+		return nil, nil
+	}
+	defaultRegion := defaultRegionFor(regions)
+	networks := make([]api.ClusterNetworkSettings, 0, len(raw))
+	for _, s := range raw {
+		n, err := parseClusterNetwork(s, defaultRegion)
+		if err != nil {
+			return nil, err
+		}
+		networks = append(networks, n)
+	}
+	return networks, nil
+}
+
+// buildCreateNodes turns --node values (or the --instance-type /
+// --volume-size shorthand) into node settings. The shorthand creates
+// one node per region, named n1, n2, ... in region order — the naming
+// convention the platform uses for node targeting (e.g.
+// `databases mcp deploy --target-nodes n1`).
+func buildCreateNodes(raw []string, instanceType string, volumeSize int,
+	regions []string) ([]api.ClusterNodeSettings, error) {
+	shorthand := instanceType != "" || volumeSize > 0
+	if len(raw) > 0 && shorthand {
+		return nil, fmt.Errorf(
+			"use either --node or --instance-type/--volume-size, not both")
+	}
+
+	if len(raw) > 0 {
+		defaultRegion := defaultRegionFor(regions)
+		nodes := make([]api.ClusterNodeSettings, 0, len(raw))
+		for _, s := range raw {
+			n, err := parseClusterNode(s, defaultRegion)
+			if err != nil {
+				return nil, err
+			}
+			nodes = append(nodes, n)
+		}
+		return nodes, nil
+	}
+
+	if !shorthand {
+		return nil, nil
+	}
+	nodes := make([]api.ClusterNodeSettings, 0, len(regions))
+	for i, region := range regions {
+		name := fmt.Sprintf("n%d", i+1)
+		n := api.ClusterNodeSettings{Name: &name, Region: region}
+		if instanceType != "" {
+			it := instanceType
+			n.InstanceType = &it
+		}
+		if volumeSize > 0 {
+			size := volumeSize
+			n.VolumeSize = &size
+		}
+		nodes = append(nodes, n)
+	}
+	return nodes, nil
 }
 
 // backupStoreWarning returns a caution when a cluster is being created with no

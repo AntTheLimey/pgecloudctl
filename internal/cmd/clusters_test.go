@@ -1,6 +1,9 @@
 package cmd
 
 import (
+	"encoding/json"
+	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/AntTheLimey/pgecloudctl/internal/api"
@@ -106,6 +109,532 @@ func TestBuildClusterUpdate(t *testing.T) {
 			t.Errorf("regions = %v, want [eu-west-1]", in.Regions)
 		}
 	})
+}
+
+func TestParseClusterNetwork(t *testing.T) {
+	str := func(p *string) string {
+		if p == nil {
+			return ""
+		}
+		return *p
+	}
+
+	tests := []struct {
+		name          string
+		in            string
+		defaultRegion string
+		wantErr       bool
+		wantRegion    string
+		wantCidr      string
+		wantPublic    []string
+		wantPrivate   []string
+	}{
+		{
+			name:       "public cluster network",
+			in:         "region=us-east-1,cidr=10.4.0.0/16,public-subnets=10.4.1.0/24",
+			wantRegion: "us-east-1",
+			wantCidr:   "10.4.0.0/16",
+			wantPublic: []string{"10.4.1.0/24"},
+		},
+		{
+			name: "private cluster network with both subnet kinds",
+			in: "region=us-east-1,cidr=10.3.0.0/16," +
+				"public-subnets=10.3.1.0/24,private-subnets=10.3.128.0/24",
+			wantRegion:  "us-east-1",
+			wantCidr:    "10.3.0.0/16",
+			wantPublic:  []string{"10.3.1.0/24"},
+			wantPrivate: []string{"10.3.128.0/24"},
+		},
+		{
+			name:       "repeated subnets accumulate",
+			in:         "region=us-east-1,public-subnets=10.4.1.0/24,public-subnets=10.4.2.0/24",
+			wantRegion: "us-east-1",
+			wantPublic: []string{"10.4.1.0/24", "10.4.2.0/24"},
+		},
+		{
+			name:          "region defaults on single-region clusters",
+			in:            "cidr=10.4.0.0/16",
+			defaultRegion: "us-east-1",
+			wantRegion:    "us-east-1",
+			wantCidr:      "10.4.0.0/16",
+		},
+		{
+			name:    "region required on multi-region clusters",
+			in:      "cidr=10.4.0.0/16",
+			wantErr: true,
+		},
+		{
+			name:    "unknown key",
+			in:      "region=us-east-1,subnet=10.4.1.0/24",
+			wantErr: true,
+		},
+		{
+			name:    "not key=value",
+			in:      "region=us-east-1,bogus",
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			n, err := parseClusterNetwork(tt.in, tt.defaultRegion)
+			if tt.wantErr {
+				if err == nil {
+					t.Fatalf("parseClusterNetwork(%q) = nil error, want error", tt.in)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if n.Region != tt.wantRegion {
+				t.Errorf("region = %q, want %q", n.Region, tt.wantRegion)
+			}
+			if str(n.Cidr) != tt.wantCidr {
+				t.Errorf("cidr = %q, want %q", str(n.Cidr), tt.wantCidr)
+			}
+			if got := strSlice(n.PublicSubnets); !equalStrings(got, tt.wantPublic) {
+				t.Errorf("public subnets = %v, want %v", got, tt.wantPublic)
+			}
+			if got := strSlice(n.PrivateSubnets); !equalStrings(got, tt.wantPrivate) {
+				t.Errorf("private subnets = %v, want %v", got, tt.wantPrivate)
+			}
+		})
+	}
+}
+
+func TestParseClusterNode(t *testing.T) {
+	str := func(p *string) string {
+		if p == nil {
+			return ""
+		}
+		return *p
+	}
+	num := func(p *int) int {
+		if p == nil {
+			return 0
+		}
+		return *p
+	}
+
+	tests := []struct {
+		name          string
+		in            string
+		defaultRegion string
+		wantErr       string
+		wantName      string
+		wantRegion    string
+		wantInstance  string
+		wantSize      int
+		wantIops      int
+		wantType      string
+		wantAZ        string
+	}{
+		{
+			name:         "spec payload node",
+			in:           "name=n1,region=us-east-1,instance-type=r7g.medium,volume-size=30",
+			wantName:     "n1",
+			wantRegion:   "us-east-1",
+			wantInstance: "r7g.medium",
+			wantSize:     30,
+		},
+		{
+			name: "all keys",
+			in: "name=n1,region=us-east-1,instance-type=r7g.large," +
+				"volume-size=100,volume-iops=3000,volume-type=gp2," +
+				"availability-zone=us-east-1a",
+			wantName:     "n1",
+			wantRegion:   "us-east-1",
+			wantInstance: "r7g.large",
+			wantSize:     100,
+			wantIops:     3000,
+			wantType:     "gp2",
+			wantAZ:       "us-east-1a",
+		},
+		{
+			name:          "region defaults on single-region clusters",
+			in:            "name=n1,instance-type=r7g.medium",
+			defaultRegion: "us-east-1",
+			wantName:      "n1",
+			wantRegion:    "us-east-1",
+			wantInstance:  "r7g.medium",
+		},
+		{
+			name:    "gp3 rejected (CLOUD-480)",
+			in:      "name=n1,region=us-east-1,volume-type=gp3",
+			wantErr: "gp3",
+		},
+		{
+			name:    "gp3 rejected case-insensitively",
+			in:      "name=n1,region=us-east-1,volume-type=GP3",
+			wantErr: "gp3",
+		},
+		{
+			name:    "region required on multi-region clusters",
+			in:      "name=n1,instance-type=r7g.medium",
+			wantErr: "region is required",
+		},
+		{
+			name:    "non-int volume-size",
+			in:      "name=n1,region=us-east-1,volume-size=big",
+			wantErr: "not an integer",
+		},
+		{
+			name:    "non-int volume-iops",
+			in:      "name=n1,region=us-east-1,volume-iops=fast",
+			wantErr: "not an integer",
+		},
+		{
+			name:    "unknown key",
+			in:      "name=n1,region=us-east-1,colour=red",
+			wantErr: "unknown key",
+		},
+		{
+			name:    "not key=value",
+			in:      "name=n1,region=us-east-1,bogus",
+			wantErr: "not key=value",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			n, err := parseClusterNode(tt.in, tt.defaultRegion)
+			if tt.wantErr != "" {
+				if err == nil {
+					t.Fatalf("parseClusterNode(%q) = nil error, want error containing %q",
+						tt.in, tt.wantErr)
+				}
+				if !strings.Contains(err.Error(), tt.wantErr) {
+					t.Errorf("error = %q, want it to contain %q", err, tt.wantErr)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if str(n.Name) != tt.wantName {
+				t.Errorf("name = %q, want %q", str(n.Name), tt.wantName)
+			}
+			if n.Region != tt.wantRegion {
+				t.Errorf("region = %q, want %q", n.Region, tt.wantRegion)
+			}
+			if str(n.InstanceType) != tt.wantInstance {
+				t.Errorf("instance type = %q, want %q", str(n.InstanceType), tt.wantInstance)
+			}
+			if num(n.VolumeSize) != tt.wantSize {
+				t.Errorf("volume size = %d, want %d", num(n.VolumeSize), tt.wantSize)
+			}
+			if num(n.VolumeIops) != tt.wantIops {
+				t.Errorf("volume iops = %d, want %d", num(n.VolumeIops), tt.wantIops)
+			}
+			if str(n.VolumeType) != tt.wantType {
+				t.Errorf("volume type = %q, want %q", str(n.VolumeType), tt.wantType)
+			}
+			if str(n.AvailabilityZone) != tt.wantAZ {
+				t.Errorf("availability zone = %q, want %q", str(n.AvailabilityZone), tt.wantAZ)
+			}
+		})
+	}
+}
+
+func TestBuildCreateNodes(t *testing.T) {
+	str := func(p *string) string {
+		if p == nil {
+			return ""
+		}
+		return *p
+	}
+
+	t.Run("nil without node flags or shorthand", func(t *testing.T) {
+		nodes, err := buildCreateNodes(nil, "", 0, []string{"us-east-1"})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if nodes != nil {
+			t.Errorf("nodes = %v, want nil", nodes)
+		}
+	})
+
+	t.Run("shorthand synthesizes one node per region", func(t *testing.T) {
+		nodes, err := buildCreateNodes(nil, "r7g.medium", 30,
+			[]string{"us-east-1", "eu-west-1"})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(nodes) != 2 {
+			t.Fatalf("nodes = %v, want 2", nodes)
+		}
+		if str(nodes[0].Name) != "n1" || nodes[0].Region != "us-east-1" {
+			t.Errorf("node[0] = %s/%s, want n1/us-east-1",
+				str(nodes[0].Name), nodes[0].Region)
+		}
+		if str(nodes[1].Name) != "n2" || nodes[1].Region != "eu-west-1" {
+			t.Errorf("node[1] = %s/%s, want n2/eu-west-1",
+				str(nodes[1].Name), nodes[1].Region)
+		}
+		for i, n := range nodes {
+			if str(n.InstanceType) != "r7g.medium" {
+				t.Errorf("node[%d] instance type = %q, want r7g.medium",
+					i, str(n.InstanceType))
+			}
+			if n.VolumeSize == nil || *n.VolumeSize != 30 {
+				t.Errorf("node[%d] volume size = %v, want 30", i, n.VolumeSize)
+			}
+			if n.VolumeType != nil {
+				t.Errorf("node[%d] volume type = %q, want unset (server "+
+					"defaults to gp2; never gp3 per CLOUD-480)",
+					i, str(n.VolumeType))
+			}
+		}
+	})
+
+	t.Run("instance-type only shorthand", func(t *testing.T) {
+		nodes, err := buildCreateNodes(nil, "r7g.medium", 0,
+			[]string{"us-east-1"})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(nodes) != 1 || nodes[0].VolumeSize != nil {
+			t.Errorf("nodes = %v, want one node with no volume size", nodes)
+		}
+	})
+
+	t.Run("explicit --node values are parsed", func(t *testing.T) {
+		nodes, err := buildCreateNodes(
+			[]string{"name=n1,instance-type=r7g.medium,volume-size=30"},
+			"", 0, []string{"us-east-1"})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(nodes) != 1 || str(nodes[0].Name) != "n1" ||
+			nodes[0].Region != "us-east-1" {
+			t.Errorf("nodes = %v, want one node n1 in us-east-1", nodes)
+		}
+	})
+
+	t.Run("--node and shorthand conflict", func(t *testing.T) {
+		_, err := buildCreateNodes([]string{"name=n1"}, "r7g.medium", 0,
+			[]string{"us-east-1"})
+		if err == nil {
+			t.Error("want conflict error, got nil")
+		}
+	})
+
+	t.Run("parse errors propagate", func(t *testing.T) {
+		_, err := buildCreateNodes([]string{"volume-type=gp3"}, "", 0,
+			[]string{"us-east-1"})
+		if err == nil {
+			t.Error("want gp3 error, got nil")
+		}
+	})
+}
+
+func TestBuildCreateNetworks(t *testing.T) {
+	t.Run("nil without network flags", func(t *testing.T) {
+		networks, err := buildCreateNetworks(nil, []string{"us-east-1"})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if networks != nil {
+			t.Errorf("networks = %v, want nil", networks)
+		}
+	})
+
+	t.Run("multiple networks parse in order", func(t *testing.T) {
+		networks, err := buildCreateNetworks([]string{
+			"region=us-east-1,cidr=10.4.0.0/16",
+			"region=eu-west-1,cidr=10.5.0.0/16",
+		}, []string{"us-east-1", "eu-west-1"})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(networks) != 2 || networks[0].Region != "us-east-1" ||
+			networks[1].Region != "eu-west-1" {
+			t.Errorf("networks = %v, want us-east-1 then eu-west-1", networks)
+		}
+	})
+
+	t.Run("parse errors propagate", func(t *testing.T) {
+		_, err := buildCreateNetworks([]string{"cidr=10.4.0.0/16"},
+			[]string{"us-east-1", "eu-west-1"})
+		if err == nil {
+			t.Error("want region-required error, got nil")
+		}
+	})
+}
+
+// setClusterCreateFlags sets the clusters create flag globals and
+// restores the previous values on cleanup.
+func setClusterCreateFlags(t *testing.T, name, cloudAccountID string,
+	regions []string, nodeLocation string, backupStoreIDs, firewallRules,
+	networks, nodes []string) {
+	t.Helper()
+	prev := []func(){
+		func() { clusterCreateName = "" },
+		func() { clusterCreateCloudAccountID = "" },
+		func() { clusterCreateRegions = nil },
+		func() { clusterCreateNodeLocation = "" },
+		func() { clusterCreateBackupStoreIDs = nil },
+		func() { clusterCreateFirewallRules = nil },
+		func() { clusterCreateNetworks = nil },
+		func() { clusterCreateNodes = nil },
+		func() { clusterCreateInstanceType = "" },
+		func() { clusterCreateVolumeSize = 0 },
+	}
+	t.Cleanup(func() {
+		for _, restore := range prev {
+			restore()
+		}
+	})
+	clusterCreateName = name
+	clusterCreateCloudAccountID = cloudAccountID
+	clusterCreateRegions = regions
+	clusterCreateNodeLocation = nodeLocation
+	clusterCreateBackupStoreIDs = backupStoreIDs
+	clusterCreateFirewallRules = firewallRules
+	clusterCreateNetworks = networks
+	clusterCreateNodes = nodes
+}
+
+// TestClusterCreateBodyMatchesServiceSpecs verifies that the CLI can
+// reproduce, without raw curl, the reference cluster payloads from the
+// pgEdge Cloud test-environment service specs (rulemaster and
+// postgrest-cloud-test docs/service-specs.md §1).
+func TestClusterCreateBodyMatchesServiceSpecs(t *testing.T) {
+	tests := []struct {
+		name          string
+		clusterName   string
+		nodeLocation  string
+		firewallRules []string
+		networks      []string
+		nodes         []string
+		wantJSON      string
+	}{
+		{
+			name:         "public cluster (postgrest-pub)",
+			clusterName:  "postgrest-pub",
+			nodeLocation: "public",
+			firewallRules: []string{
+				"name=postgres,port=5432,sources=0.0.0.0/0",
+				"name=https,port=443,sources=0.0.0.0/0",
+			},
+			networks: []string{
+				"region=us-east-1,cidr=10.4.0.0/16," +
+					"public-subnets=10.4.1.0/24",
+			},
+			nodes: []string{
+				"name=n1,region=us-east-1," +
+					"instance-type=r7g.medium,volume-size=30",
+			},
+			wantJSON: `{
+				"name": "postgrest-pub",
+				"cloud_account_id": "5be8beea-321f-418f-b33f-bea07c89d4ee",
+				"backup_store_ids": ["dbd5e3d9-2364-4066-86d5-5b13cc8deaba"],
+				"regions": ["us-east-1"],
+				"node_location": "public",
+				"nodes": [{
+					"name": "n1",
+					"region": "us-east-1",
+					"instance_type": "r7g.medium",
+					"volume_size": 30
+				}],
+				"networks": [{
+					"region": "us-east-1",
+					"cidr": "10.4.0.0/16",
+					"public_subnets": ["10.4.1.0/24"]
+				}],
+				"firewall_rules": [
+					{"name": "postgres", "port": 5432, "sources": ["0.0.0.0/0"]},
+					{"name": "https", "port": 443, "sources": ["0.0.0.0/0"]}
+				]
+			}`,
+		},
+		{
+			name:         "private cluster (postgrest-priv)",
+			clusterName:  "postgrest-priv",
+			nodeLocation: "private",
+			firewallRules: []string{
+				"name=postgres,port=5432,sources=0.0.0.0/0",
+			},
+			networks: []string{
+				"region=us-east-1,cidr=10.3.0.0/16," +
+					"public-subnets=10.3.1.0/24," +
+					"private-subnets=10.3.128.0/24",
+			},
+			nodes: []string{
+				"name=n1,region=us-east-1," +
+					"instance-type=r7g.medium,volume-size=30",
+			},
+			wantJSON: `{
+				"name": "postgrest-priv",
+				"cloud_account_id": "5be8beea-321f-418f-b33f-bea07c89d4ee",
+				"backup_store_ids": ["dbd5e3d9-2364-4066-86d5-5b13cc8deaba"],
+				"regions": ["us-east-1"],
+				"node_location": "private",
+				"nodes": [{
+					"name": "n1",
+					"region": "us-east-1",
+					"instance_type": "r7g.medium",
+					"volume_size": 30
+				}],
+				"networks": [{
+					"region": "us-east-1",
+					"cidr": "10.3.0.0/16",
+					"public_subnets": ["10.3.1.0/24"],
+					"private_subnets": ["10.3.128.0/24"]
+				}],
+				"firewall_rules": [{
+					"name": "postgres",
+					"port": 5432,
+					"sources": ["0.0.0.0/0"]
+				}]
+			}`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			setClusterCreateFlags(t, tt.clusterName,
+				"5be8beea-321f-418f-b33f-bea07c89d4ee",
+				[]string{"us-east-1"}, tt.nodeLocation,
+				[]string{"dbd5e3d9-2364-4066-86d5-5b13cc8deaba"},
+				tt.firewallRules, tt.networks, tt.nodes)
+
+			body, err := buildClusterCreateBody()
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			got, err := json.Marshal(body)
+			if err != nil {
+				t.Fatalf("marshal body: %v", err)
+			}
+
+			var gotAny, wantAny any
+			if err := json.Unmarshal(got, &gotAny); err != nil {
+				t.Fatalf("unmarshal got: %v", err)
+			}
+			if err := json.Unmarshal([]byte(tt.wantJSON), &wantAny); err != nil {
+				t.Fatalf("unmarshal want: %v", err)
+			}
+			if !reflect.DeepEqual(gotAny, wantAny) {
+				t.Errorf("payload mismatch\ngot:  %s\nwant: %s",
+					got, tt.wantJSON)
+			}
+		})
+	}
+}
+
+func equalStrings(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
 }
 
 func TestClusterCreateFirewallParsing(t *testing.T) {

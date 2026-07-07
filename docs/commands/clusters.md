@@ -77,7 +77,10 @@ Created             2026-01-15T10:00:00Z
 
 ### create
 
-Create a new cluster across one or more cloud regions.
+Create a new cluster across one or more cloud regions. Networks
+(CIDR + subnets), node sizing, firewall rules, and backup stores can
+all be set at create time — a cluster is fully specifiable from the
+CLI.
 
 **Usage:** `pgecloudctl clusters create [flags]`
 
@@ -89,7 +92,31 @@ Create a new cluster across one or more cloud regions.
 | `--cloud-account-id string` | Yes | Cloud account ID |
 | `--regions strings` | Yes | Comma-separated list of regions |
 | `--node-location string` | Yes | Node location (public or private) |
+| `--backup-store-id strings` | No | Backup store ID to attach (repeatable; required to host a DB) |
+| `--firewall-rule stringArray` | No | Firewall rule (repeatable); name one of http, https, postgres, ssh |
+| `--network stringArray` | No | Network settings (repeatable, one per region) |
+| `--node stringArray` | No | Node settings (repeatable) |
+| `--instance-type string` | No | Instance type for all nodes (shorthand for `--node`) |
+| `--volume-size int` | No | Volume size in GB for all nodes (shorthand for `--node`) |
+| `--wait` | No | Block until the create task reaches a terminal state |
+| `--timeout int` | No | Max seconds to wait when `--wait` is set (default 300) |
+| `--interval int` | No | Polling interval in seconds when `--wait` is set (default 5) |
 | `-h, --help` | No | help for create |
+
+The structured flags take comma-separated key=value pairs; repeat a
+list-valued key to add elements. On single-region clusters `region=`
+may be omitted:
+
+- `--firewall-rule name=https,port=443,sources=0.0.0.0/0`
+- `--network region=us-east-1,cidr=10.4.0.0/16,public-subnets=10.4.1.0/24,private-subnets=10.4.128.0/24`
+- `--node name=n1,region=us-east-1,instance-type=r7g.medium,volume-size=30`
+  (also accepts volume-iops, volume-type, availability-zone)
+
+`volume-type=gp3` is rejected — gp3 nodes wedge later firewall-rule
+updates and leave the cluster degraded (CLOUD-480). Omit volume-type
+to use the default (gp2). `--node` and the
+`--instance-type`/`--volume-size` shorthand are mutually exclusive;
+the shorthand creates one node per region, named n1, n2, ...
 
 **Example:**
 
@@ -97,17 +124,54 @@ Create a new cluster across one or more cloud regions.
 pgecloudctl clusters create \
     --name prod-cluster \
     --cloud-account-id c3d4e5f6-a7b8-9012-cdef-123456789012 \
-    --regions us-east-1,eu-west-1 \
-    --node-location public
+    --regions us-east-1 \
+    --node-location public \
+    --backup-store-id f2a3b4c5-d6e7-8901-fabc-012345678901 \
+    --node name=n1,instance-type=r7g.medium,volume-size=30 \
+    --network cidr=10.4.0.0/16,public-subnets=10.4.1.0/24 \
+    --firewall-rule name=postgres,port=5432,sources=0.0.0.0/0
 ```
 
 **Example output (table):**
 
 ```text
-FIELD               VALUE
-ID                  a1b2c3d4-e5f6-7890-abcd-ef1234567890
-Name                prod-cluster
-Status              creating
+Cluster "prod-cluster" created (id: a1b2c3d4-e5f6-7890-abcd-ef1234567890, status: creating).
+Track progress: pgecloudctl tasks list --subject-id a1b2c3d4-e5f6-7890-abcd-ef1234567890
+```
+
+---
+
+### update
+
+Update a cluster in place. Firewall rules and backup stores append to
+the cluster's existing values (read-modify-write); regions replace the
+current list when supplied. At least one flag is required.
+
+**Usage:** `pgecloudctl clusters update <id> [flags]`
+
+**Flags:**
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `--firewall-rule stringArray` | No | Firewall rule to append (repeatable) |
+| `--backup-store-id strings` | No | Backup store ID to attach (repeatable) |
+| `--regions strings` | No | Replace the cluster's regions |
+| `--wait` | No | Block until the update task reaches a terminal state |
+| `--timeout int` | No | Max seconds to wait when `--wait` is set (default 300) |
+| `--interval int` | No | Polling interval in seconds when `--wait` is set (default 5) |
+| `-h, --help` | No | help for update |
+
+**Example:**
+
+```bash
+pgecloudctl clusters update a1b2c3d4-e5f6-7890-abcd-ef1234567890 \
+    --firewall-rule name=https,port=443,sources=0.0.0.0/0
+```
+
+**Example output (table):**
+
+```text
+Cluster a1b2c3d4-e5f6-7890-abcd-ef1234567890 updated.
 ```
 
 ---
@@ -123,6 +187,7 @@ Delete a cluster by ID.
 | Flag | Required | Description |
 |------|----------|-------------|
 | `-y, --yes` | No | Skip confirmation prompt |
+| `--force` | No | Also delete all databases and cloud infrastructure, bypassing status and database-existence checks |
 | `-h, --help` | No | help for delete |
 
 **Example:**
