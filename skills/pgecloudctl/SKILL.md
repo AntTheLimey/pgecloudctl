@@ -24,6 +24,11 @@ If the command is not found:
 - Script: `curl -fsSL https://raw.githubusercontent.com/AntTheLimey/pgecloudctl/main/install.sh | sh`
 - Go: `go install github.com/AntTheLimey/pgecloudctl@latest`
 
+The binary embeds its own complete reference: `pgecloudctl llms`
+prints llms-full.txt (every command, flag, and workflow) for the
+installed version. Prefer it over guessing from `--help`. This skill
+can be (re)installed from any binary with `pgecloudctl skill install`.
+
 ### Check authentication
 
 ```bash
@@ -74,9 +79,14 @@ non-interactive use.
 
 ### Important notes (read before any workflow)
 
-- `pgecloudctl` does NOT have firewall commands — direct the user to the
-  pgEdge Cloud UI at https://app.pgedge.com to configure firewall/CIDR
-  rules under Network → Firewall.
+- Firewall rules, network CIDR/subnets, and node sizing are all set
+  from the CLI: `clusters create` takes `--firewall-rule`, `--network`,
+  and `--node` (repeatable structured flags); `clusters update` appends
+  firewall rules and backup stores to an existing cluster. No UI visit
+  or raw API call needed.
+- Never set `volume-type=gp3` on a node — it wedges later
+  firewall-rule updates and leaves the cluster degraded (CLOUD-480).
+  Omit volume-type; the default (gp2) is correct.
 - Public clusters get external hostnames automatically; no ingress needed.
 - Private clusters require an ingress + service registration before the
   service endpoint is reachable externally.
@@ -107,14 +117,21 @@ Provision a cluster, database, and optional AI services from scratch.
 
 4. CREATE CLUSTER
    pgecloudctl clusters create --name <n> --cloud-account-id <id>
-     --regions <r> --node-location <public|private> -o json
+     --regions <r> --node-location <public|private>
+     --backup-store-id <store-id>
+     --node name=n1,instance-type=r7g.medium,volume-size=30
+     --network cidr=10.4.0.0/16,public-subnets=10.4.1.0/24
+     --firewall-rule name=postgres,port=5432,sources=0.0.0.0/0 -o json
+   Private clusters: add private-subnets=... to --network.
+   Pick a CIDR that does not overlap other clusters in the account.
    Capture task_id → tasks wait <task-id> --timeout 600
    Capture result cluster_id from task output
 
-5. FIREWALL (manual step)
-   Inform user: no CLI command exists for firewall rules.
-   Direct to: https://app.pgedge.com → cluster → Network → Firewall
-   Wait for user confirmation before continuing.
+5. FIREWALL (append later if needed)
+   Rules are set at create time (step 4). To add one afterwards:
+   pgecloudctl clusters update <cluster-id>
+     --firewall-rule name=https,port=443,sources=0.0.0.0/0
+   (append semantics — existing rules are preserved)
 
 6. CREATE DATABASE
    pgecloudctl databases create --name <n> --cluster-id <id> -o json

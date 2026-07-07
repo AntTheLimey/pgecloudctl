@@ -3,6 +3,12 @@
 > CLI for managing pgEdge Cloud resources. Supports table, JSON, and YAML
 > output. Designed for both human operators and AI agents.
 
+This document ships inside the binary: run `pgecloudctl llms` to print
+it from any installed copy — no repo checkout needed. AI agents should
+read it before composing commands instead of improvising from `--help`.
+`pgecloudctl skill install` installs the bundled Claude Code skill into
+`~/.claude/skills/pgecloudctl`.
+
 ## Installation
 
 ### Homebrew
@@ -232,7 +238,9 @@ Created             2026-01-15T10:00:00Z
 
 #### clusters create
 
-Create a new cluster across one or more cloud regions.
+Create a new cluster across one or more cloud regions. A cluster can be
+created fully from the CLI — networks (CIDR + subnets), node sizing,
+firewall rules, and backup stores included. No raw API calls needed.
 
 **Usage:** `pgecloudctl clusters create [flags]`
 
@@ -244,25 +252,103 @@ Create a new cluster across one or more cloud regions.
 | `--cloud-account-id string` | Yes | Cloud account ID |
 | `--regions strings` | Yes | Comma-separated list of regions |
 | `--node-location string` | Yes | Node location (public or private) |
+| `--backup-store-id strings` | No | Backup store ID to attach (repeatable; required to host a DB) |
+| `--firewall-rule stringArray` | No | Firewall rule (repeatable): `name=https,port=443,sources=0.0.0.0/0`. name must be one of http, https, postgres, ssh |
+| `--network stringArray` | No | Network settings (repeatable, one per region): `region=us-east-1,cidr=10.4.0.0/16,public-subnets=10.4.1.0/24,private-subnets=10.4.128.0/24` |
+| `--node stringArray` | No | Node settings (repeatable): `name=n1,region=us-east-1,instance-type=r7g.medium,volume-size=30`. Also accepts volume-iops, volume-type, availability-zone |
+| `--instance-type string` | No | Instance type for all nodes (shorthand for --node; creates one node per region named n1, n2, ...) |
+| `--volume-size int` | No | Volume size in GB for all nodes (shorthand for --node) |
+| `--wait` | No | Block until the create task reaches a terminal state |
+| `--timeout int` | No | Max seconds to wait when --wait is set (default 300) |
+| `--interval int` | No | Polling interval in seconds when --wait is set (default 5) |
 | `-h, --help` | No | help for create |
 
-**Example:**
+Structured flags (`--firewall-rule`, `--network`, `--node`) take
+comma-separated key=value pairs; repeat a list-valued key (sources,
+public-subnets, private-subnets) to add elements. On single-region
+clusters the `region=` key may be omitted. `--node` and the
+`--instance-type`/`--volume-size` shorthand are mutually exclusive.
+
+`volume-type=gp3` is rejected: gp3 nodes wedge later firewall-rule
+updates and leave the cluster degraded (CLOUD-480). Omit volume-type to
+use the default (gp2).
+
+A cluster created without `--backup-store-id` provisions, but cannot
+host a database until a store is attached (`clusters update`).
+
+**Example (full public cluster, CLI only):**
 
 ```bash
 pgecloudctl clusters create \
-    --name prod-cluster \
+    --name test-pub \
     --cloud-account-id c3d4e5f6-a7b8-9012-cdef-123456789012 \
-    --regions us-east-1,eu-west-1 \
-    --node-location public
+    --regions us-east-1 \
+    --node-location public \
+    --backup-store-id f2a3b4c5-d6e7-8901-fabc-012345678901 \
+    --node name=n1,instance-type=r7g.medium,volume-size=30 \
+    --network cidr=10.4.0.0/16,public-subnets=10.4.1.0/24 \
+    --firewall-rule name=postgres,port=5432,sources=0.0.0.0/0 \
+    --firewall-rule name=https,port=443,sources=0.0.0.0/0
+```
+
+**Example (private cluster network — public + private subnets):**
+
+```bash
+pgecloudctl clusters create \
+    --name test-priv \
+    --cloud-account-id c3d4e5f6-a7b8-9012-cdef-123456789012 \
+    --regions us-east-1 \
+    --node-location private \
+    --backup-store-id f2a3b4c5-d6e7-8901-fabc-012345678901 \
+    --node name=n1,instance-type=r7g.medium,volume-size=30 \
+    --network cidr=10.3.0.0/16,public-subnets=10.3.1.0/24,private-subnets=10.3.128.0/24 \
+    --firewall-rule name=postgres,port=5432,sources=0.0.0.0/0
 ```
 
 **Example output (table):**
 
 ```
-FIELD               VALUE
-ID                  a1b2c3d4-e5f6-7890-abcd-ef1234567890
-Name                prod-cluster
-Status              creating
+Cluster "test-pub" created (id: a1b2c3d4-e5f6-7890-abcd-ef1234567890, status: creating).
+Track progress: pgecloudctl tasks list --subject-id a1b2c3d4-e5f6-7890-abcd-ef1234567890
+```
+
+---
+
+#### clusters update
+
+Update a cluster in place. Firewall rules and backup stores are
+appended to the cluster's existing values (read-modify-write — existing
+settings are preserved); regions replace the current list when
+supplied.
+
+**Usage:** `pgecloudctl clusters update <id> [flags]`
+
+**Flags:**
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `--firewall-rule stringArray` | No | Firewall rule to append (repeatable): `name=https,port=443,sources=0.0.0.0/0`. name must be one of http, https, postgres, ssh |
+| `--backup-store-id strings` | No | Backup store ID to attach (repeatable) |
+| `--regions strings` | No | Replace the cluster's regions |
+| `--wait` | No | Block until the update task reaches a terminal state |
+| `--timeout int` | No | Max seconds to wait when --wait is set (default 300) |
+| `--interval int` | No | Polling interval in seconds when --wait is set (default 5) |
+| `-h, --help` | No | help for update |
+
+At least one of `--firewall-rule`, `--backup-store-id`, or `--regions`
+is required.
+
+**Example:**
+
+```bash
+pgecloudctl clusters update a1b2c3d4-e5f6-7890-abcd-ef1234567890 \
+    --firewall-rule name=https,port=443,sources=0.0.0.0/0
+```
+
+**Example output (table):**
+
+```
+Cluster a1b2c3d4-e5f6-7890-abcd-ef1234567890 updated.
 ```
 
 ---
@@ -278,6 +364,10 @@ Delete a cluster by ID.
 | Flag | Required | Description |
 |------|----------|-------------|
 | `-y, --yes` | No | Skip confirmation prompt |
+| `--force` | No | Also delete all databases and cloud infrastructure, bypassing status and database-existence checks |
+| `--wait` | No | Block until the delete task reaches a terminal state |
+| `--timeout int` | No | Max seconds to wait when --wait is set (default 300) |
+| `--interval int` | No | Polling interval in seconds when --wait is set (default 5) |
 | `-h, --help` | No | help for delete |
 
 **Example:**
@@ -2032,7 +2122,7 @@ broken to diagnose the problem.
 | Environment | Reports OS/arch and whether `PGEDGE_CLIENT_ID`, `PGEDGE_API_URL`, `NO_COLOR` are set. |
 | Shell | Detects current shell and checks whether `pgecloudctl` is on `$PATH`. |
 | Install method | Infers installation method from executable path: homebrew, install-script, go-install, or unknown. |
-| Skill | Checks whether the pgecloudctl Claude Code skill is installed in `~/.claude/plugins/pgecloudctl/`. |
+| Skill | Checks whether the pgecloudctl Claude Code skill is installed in `~/.claude/skills/pgecloudctl/` (or the legacy `~/.claude/plugins/` locations). |
 
 **Example:**
 
@@ -2056,6 +2146,63 @@ Skill             ok        installed (v0.3.0)
 ```
 
 Use `-o json` or `-o yaml` for machine-readable output.
+
+---
+
+### llms
+
+Print this complete reference (llms-full.txt) to stdout. The document
+is embedded in the binary, so it is always available and always matches
+the installed version — AI agents should run this before composing
+commands.
+
+**Usage:** `pgecloudctl llms [flags]`
+
+**Flags:**
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `-h, --help` | No | help for llms |
+
+**Example:**
+
+```bash
+pgecloudctl llms
+```
+
+---
+
+### skill
+
+Manage the bundled Claude Code skill.
+
+#### skill install
+
+Install the bundled pgEdge Cloud skill (SKILL.md and
+knowledge-base.md) into `~/.claude/skills/pgecloudctl`, where Claude
+Code discovers skills automatically. Safe to re-run; upgrades in place.
+
+**Usage:** `pgecloudctl skill install [flags]`
+
+**Flags:**
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `--dir string` | No | Target directory (default: ~/.claude/skills/pgecloudctl) |
+| `-h, --help` | No | help for install |
+
+**Example:**
+
+```bash
+pgecloudctl skill install
+```
+
+**Example output (table):**
+
+```
+Skill installed to /Users/alice/.claude/skills/pgecloudctl (version v0.5.0).
+Claude Code discovers it automatically on the next session.
+```
 
 ---
 
@@ -2113,8 +2260,16 @@ pgecloudctl clusters create \
   --cloud-account-id <cloud-account-id> \
   --regions <region> \
   --node-location <public|private> \
+  --backup-store-id <backup-store-id> \
+  --node name=n1,instance-type=r7g.medium,volume-size=30 \
+  --network cidr=10.4.0.0/16,public-subnets=10.4.1.0/24 \
+  --firewall-rule name=postgres,port=5432,sources=0.0.0.0/0 \
   -o json
 ```
+
+For private clusters, include a private subnet in the network:
+`--network cidr=10.3.0.0/16,public-subnets=10.3.1.0/24,private-subnets=10.3.128.0/24`.
+Pick a CIDR that does not overlap other clusters in the same account.
 
 Capture `task_id` as `<cluster-task-id>`.
 
@@ -2127,11 +2282,16 @@ pgecloudctl tasks wait <cluster-task-id> -o json --timeout 600
 Expected: JSON with `"status": "completed"`. Capture `result.id` as
 `<cluster-id>`.
 
-**Step 6: Configure firewall rules**
+**Step 6: Adjust firewall rules (if needed)**
 
-Firewall rule management is not yet available in `pgecloudctl`. Use the
-pgEdge Cloud UI at `https://app.pgedge.com`, navigate to the cluster, and
-configure allowed CIDR ranges under **Network → Firewall**.
+Firewall rules are normally set at create time (Step 4). To append
+rules later — e.g. `https` on 443 for service subdomain routing — use
+`clusters update`, which preserves existing rules:
+
+```bash
+pgecloudctl clusters update <cluster-id> \
+  --firewall-rule name=https,port=443,sources=0.0.0.0/0
+```
 
 **Step 7: Create the database**
 
