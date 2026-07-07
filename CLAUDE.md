@@ -2,6 +2,16 @@
 
 Go CLI for managing pgEdge Cloud resources via the REST API.
 
+> **AI agents — read the bundled reference first.** Before running or
+> modifying this CLI, read `llms-full.txt` (complete command/flag/
+> workflow reference; also printed by `pgecloudctl llms`) and
+> `skills/pgecloudctl/SKILL.md` (workflow intelligence). Do not
+> improvise commands from `--help` output or fall back to raw curl —
+> the CLI covers cluster networking, node sizing, and firewall rules.
+> A test (`TestLLMSFullCoversCommandTree`) fails the build if a
+> command or flag is missing from `llms-full.txt`, so keep it updated
+> alongside any command change.
+
 ## Build & Test
 
 - `make build` — build the binary

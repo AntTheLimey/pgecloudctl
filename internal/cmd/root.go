@@ -20,9 +20,14 @@ var (
 )
 
 var rootCmd = &cobra.Command{
-	Use:          "pgecloudctl",
-	Short:        "CLI for managing pgEdge Cloud resources",
-	Long:         "pgecloudctl manages pgEdge Cloud clusters, databases, and services via the REST API.",
+	Use:   "pgecloudctl",
+	Short: "CLI for managing pgEdge Cloud resources",
+	Long: `pgecloudctl manages pgEdge Cloud clusters, databases, and services via the REST API.
+
+AI agents: do not improvise from --help output alone. Run ` +
+		"`pgecloudctl llms`" + ` for the complete command and workflow
+reference (llms-full.txt), and run ` + "`pgecloudctl skill install`" + `
+to install the bundled Claude Code skill (~/.claude/skills).`,
 	SilenceUsage: true,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		output.ColorEnabled = !flagNoColor &&

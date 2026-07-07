@@ -3,10 +3,14 @@
 > CLI for managing pgEdge Cloud resources. Supports table, JSON,
 > and YAML output. Designed for both human operators and AI agents.
 
+AI agents: run `pgecloudctl llms` to print the complete reference
+(llms-full.txt) straight from the binary, and `pgecloudctl skill
+install` to install the bundled Claude Code skill.
+
 ## Commands
 
 - [Auth](docs/commands/auth.md): login, status, logout
-- [Clusters](docs/commands/clusters.md): list, get, create, delete, shares
+- [Clusters](docs/commands/clusters.md): list, get, create, update, delete, shares
 - [Databases](docs/commands/databases.md): list, get, create, update, delete, services, mcp, rag
 - [Backups](docs/commands/backups.md): list, get, create, delete, url
 - [Backup Stores](docs/commands/backup-stores.md): list, get, create, delete
@@ -17,6 +21,8 @@
 - [Tasks](docs/commands/tasks.md): list, get, wait
 - [Cloud Accounts](docs/commands/cloud-accounts.md): list, get, create, delete, cloudformation-template
 - [Doctor](docs/commands/doctor.md): environment diagnostics
+- Llms: print the complete AI-agent reference (llms-full.txt) from the binary
+- Skill: install the bundled Claude Code skill to ~/.claude/skills
 
 ## Workflows
 

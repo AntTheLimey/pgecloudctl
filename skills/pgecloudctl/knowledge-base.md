@@ -71,8 +71,25 @@ are synchronous and have no `--wait`.
   regions, cloud_account_id, created_at
 - `clusters create` — required: `--name`, `--cloud-account-id`,
   `--regions`, `--node-location` (public|private);
+  optional: `--backup-store-id` (repeatable; required to host a DB),
+  `--firewall-rule` (repeatable;
+  `name=postgres,port=5432,sources=0.0.0.0/0`; name one of
+  http|https|postgres|ssh),
+  `--network` (repeatable, one per region;
+  `region=...,cidr=10.4.0.0/16,`
+  `public-subnets=10.4.1.0/24,private-subnets=10.4.128.0/24`),
+  `--node` (repeatable;
+  `name=n1,region=...,instance-type=r7g.medium,volume-size=30`;
+  volume-type gp3 rejected — CLOUD-480),
+  `--instance-type` + `--volume-size` (shorthand for --node, one node
+  per region), `--wait`/`--timeout`/`--interval`;
+  region= may be omitted on single-region clusters;
   response includes task_id
-- `clusters delete <id>` — optional: `--yes`
+- `clusters update <id>` — optional: `--firewall-rule` (append),
+  `--backup-store-id` (append), `--regions` (replace),
+  `--wait`/`--timeout`/`--interval`; at least one flag required
+- `clusters delete <id>` — optional: `--yes`, `--force` (cascade
+  databases + infrastructure), `--wait`/`--timeout`/`--interval`
 
 ### clusters shares
 - `clusters shares list <cluster-id>` — output fields: id, name, tenancy,
@@ -207,3 +224,12 @@ monitor with `pgecloudctl tasks list --subject-id <db-id>`.
 - `doctor` — no flags; runs 9 checks: Version, Latest version, Auth,
   API connectivity, Config, Environment, Shell, Install method, Skill;
   each check reports ok|warning|error
+
+### llms
+- `llms` — prints the complete embedded reference (llms-full.txt) for
+  the installed version; no flags, no auth required
+
+### skill
+- `skill install` — optional: `--dir` (default
+  ~/.claude/skills/pgecloudctl); installs SKILL.md + knowledge-base.md
+  from the binary; idempotent, upgrades in place

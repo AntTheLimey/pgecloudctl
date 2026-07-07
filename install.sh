@@ -90,25 +90,19 @@ chmod +x "${INSTALL_DIR}/${BINARY}"
 
 echo "Installed ${BINARY} ${VERSION} to ${INSTALL_DIR}/${BINARY}"
 
-# Install Claude Code skill if Claude Code is detected
+# Install Claude Code skill if Claude Code is detected. The skill files
+# are embedded in the binary (`skill install`), so no extra download is
+# needed and the skill always matches the installed version.
+# ~/.claude/skills is the directory Claude Code discovers automatically;
+# the ~/.claude/plugins location used before v0.5 is not.
 CLAUDE_DIR="${HOME}/.claude"
 if [ -d "$CLAUDE_DIR" ]; then
     echo "Claude Code detected. Installing pgecloudctl skill..."
-    SKILL_ARCHIVE="${BINARY}_${VERSION_NUM}_skill.tar.gz"
-    SKILL_URL="https://github.com/${REPO}/releases/download/${VERSION}/${SKILL_ARCHIVE}"
-    PLUGIN_DIR="${CLAUDE_DIR}/plugins/${BINARY}"
-
-    if curl -fsSL -o "${TMPDIR}/${SKILL_ARCHIVE}" "$SKILL_URL" 2>/dev/null; then
-        mkdir -p "$PLUGIN_DIR"
-        if tar -xzf "${TMPDIR}/${SKILL_ARCHIVE}" -C "$PLUGIN_DIR"; then
-            echo "Claude Code skill installed to ${PLUGIN_DIR}"
-        else
-            echo "Warning: skill archive extraction failed. Binary remains installed." >&2
-        fi
-    else
-        echo "Warning: could not download skill archive. Skill not installed." >&2
+    if ! "${INSTALL_DIR}/${BINARY}" skill install; then
+        echo "Warning: skill install failed. Binary remains installed." >&2
+        echo "Retry manually with: ${BINARY} skill install" >&2
     fi
 else
     echo "Claude Code not detected — skill not installed."
-    echo "Install Claude Code and re-run to enable AI integration."
+    echo "Run '${BINARY} skill install' later to enable AI integration."
 fi

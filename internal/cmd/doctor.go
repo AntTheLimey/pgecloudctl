@@ -253,6 +253,14 @@ func checkSkill() skillInfo {
 		return skillInfo{}
 	}
 
+	// The skills dir is where `pgecloudctl skill install` writes and the
+	// only location Claude Code discovers automatically; the plugin dirs
+	// are legacy locations used by install.sh prior to v0.5.
+	if info, ok := checkSkillsDir(
+		filepath.Join(home, ".claude", "skills", "pgecloudctl")); ok {
+		return info
+	}
+
 	candidates := []string{
 		filepath.Join(home, ".claude", "plugins", "pgecloudctl"),
 		filepath.Join(home, ".claude", "plugins", "cache", "pgecloudctl"),
@@ -296,6 +304,24 @@ func checkSkill() skillInfo {
 	}
 
 	return skillInfo{}
+}
+
+// checkSkillsDir reports whether a skill installed by
+// `pgecloudctl skill install` exists at dir, reading its version from
+// the .version marker file when present.
+func checkSkillsDir(dir string) (skillInfo, bool) {
+	if _, err := os.Stat(filepath.Join(dir, "SKILL.md")); err != nil {
+		return skillInfo{}, false
+	}
+	info := skillInfo{Installed: true}
+	if data, err := os.ReadFile(
+		filepath.Join(dir, skillVersionFile)); err == nil {
+		// Stored as the CLI version (e.g. "v0.5.0"); the table view
+		// prefixes "v", so strip it here to match plugin.json style.
+		info.Version = strings.TrimPrefix(
+			strings.TrimSpace(string(data)), "v")
+	}
+	return info, true
 }
 
 // --- runner ------------------------------------------------------------------
