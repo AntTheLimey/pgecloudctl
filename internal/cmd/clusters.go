@@ -83,7 +83,7 @@ func init() {
 		&clusterCreateNodes, "node", nil,
 		"Node settings (repeatable). "+
 			"e.g. name=n1,region=us-east-1,instance-type=r7g.medium,"+
-			"volume-size=30 (volume-type gp3 is rejected; see CLOUD-480)")
+			"volume-size=30")
 	clustersCreateCmd.Flags().StringVar(&clusterCreateInstanceType,
 		"instance-type", "",
 		"Instance type for all nodes (shorthand for --node; "+
@@ -647,8 +647,7 @@ func parseClusterNetwork(s, defaultRegion string) (
 // parseClusterNode parses a repeatable --node flag value of the form
 // "name=n1,region=us-east-1,instance-type=r7g.medium,volume-size=30"
 // into ClusterNodeSettings. region may be omitted only on single-region
-// clusters. volume-type gp3 is rejected: gp3 nodes wedge later
-// firewall-rule updates and leave the cluster degraded (CLOUD-480).
+// clusters.
 func parseClusterNode(s, defaultRegion string) (
 	api.ClusterNodeSettings, error) {
 	var n api.ClusterNodeSettings
@@ -686,13 +685,6 @@ func parseClusterNode(s, defaultRegion string) (
 			}
 			n.VolumeIops = &iops
 		case "volume-type":
-			if strings.EqualFold(v, "gp3") {
-				return n, fmt.Errorf(
-					"node: volume-type gp3 is not supported — gp3 " +
-						"wedges firewall-rule updates and leaves the " +
-						"cluster degraded (CLOUD-480); omit volume-type " +
-						"to use the default (gp2)")
-			}
 			vt := v
 			n.VolumeType = &vt
 		case "availability-zone":

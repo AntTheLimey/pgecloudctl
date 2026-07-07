@@ -269,10 +269,6 @@ public-subnets, private-subnets) to add elements. On single-region
 clusters the `region=` key may be omitted. `--node` and the
 `--instance-type`/`--volume-size` shorthand are mutually exclusive.
 
-`volume-type=gp3` is rejected: gp3 nodes wedge later firewall-rule
-updates and leave the cluster degraded (CLOUD-480). Omit volume-type to
-use the default (gp2).
-
 A cluster created without `--backup-store-id` provisions, but cannot
 host a database until a store is attached (`clusters update`).
 

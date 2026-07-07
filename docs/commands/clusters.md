@@ -112,11 +112,9 @@ may be omitted:
 - `--node name=n1,region=us-east-1,instance-type=r7g.medium,volume-size=30`
   (also accepts volume-iops, volume-type, availability-zone)
 
-`volume-type=gp3` is rejected — gp3 nodes wedge later firewall-rule
-updates and leave the cluster degraded (CLOUD-480). Omit volume-type
-to use the default (gp2). `--node` and the
-`--instance-type`/`--volume-size` shorthand are mutually exclusive;
-the shorthand creates one node per region, named n1, n2, ...
+`--node` and the `--instance-type`/`--volume-size` shorthand are
+mutually exclusive; the shorthand creates one node per region, named
+n1, n2, ...
 
 **Example:**
 

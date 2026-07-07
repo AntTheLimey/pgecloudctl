@@ -84,9 +84,6 @@ non-interactive use.
   and `--node` (repeatable structured flags); `clusters update` appends
   firewall rules and backup stores to an existing cluster. No UI visit
   or raw API call needed.
-- Never set `volume-type=gp3` on a node — it wedges later
-  firewall-rule updates and leaves the cluster degraded (CLOUD-480).
-  Omit volume-type; the default (gp2) is correct.
 - Public clusters get external hostnames automatically; no ingress needed.
 - Private clusters require an ingress + service registration before the
   service endpoint is reachable externally.
