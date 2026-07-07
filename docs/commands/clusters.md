@@ -188,6 +188,9 @@ Delete a cluster by ID.
 |------|----------|-------------|
 | `-y, --yes` | No | Skip confirmation prompt |
 | `--force` | No | Also delete all databases and cloud infrastructure, bypassing status and database-existence checks |
+| `--wait` | No | Block until the delete task reaches a terminal state |
+| `--timeout int` | No | Max seconds to wait when `--wait` is set (default 300) |
+| `--interval int` | No | Polling interval in seconds when `--wait` is set (default 5) |
 | `-h, --help` | No | help for delete |
 
 **Example:**

@@ -2268,7 +2268,11 @@ pgecloudctl clusters create \
 ```
 
 For private clusters, include a private subnet in the network:
-`--network cidr=10.3.0.0/16,public-subnets=10.3.1.0/24,private-subnets=10.3.128.0/24`.
+
+```bash
+--network cidr=10.3.0.0/16,public-subnets=10.3.1.0/24,private-subnets=10.3.128.0/24
+```
+
 Pick a CIDR that does not overlap other clusters in the same account.
 
 Capture `task_id` as `<cluster-task-id>`.

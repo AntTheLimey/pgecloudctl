@@ -345,122 +345,204 @@ func TestBuildCreateNodes(t *testing.T) {
 		return *p
 	}
 
-	t.Run("nil without node flags or shorthand", func(t *testing.T) {
-		nodes, err := buildCreateNodes(nil, "", 0, []string{"us-east-1"})
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if nodes != nil {
-			t.Errorf("nodes = %v, want nil", nodes)
-		}
-	})
+	type nodeExp struct {
+		name          string
+		region        string
+		instanceType  string
+		volumeSize    int
+		volumeSizeNil bool
+		volumeTypeNil bool
+	}
+	tests := []struct {
+		name         string
+		nodeFlags    []string
+		instanceType string
+		volumeSize   int
+		regions      []string
+		wantErr      bool
+		wantNil      bool
+		want         []nodeExp
+	}{
+		{
+			name:    "nil without node flags or shorthand",
+			regions: []string{"us-east-1"},
+			wantNil: true,
+		},
+		{
+			name:         "shorthand synthesizes one node per region",
+			instanceType: "r7g.medium",
+			volumeSize:   30,
+			regions:      []string{"us-east-1", "eu-west-1"},
+			want: []nodeExp{
+				{
+					name: "n1", region: "us-east-1",
+					instanceType: "r7g.medium", volumeSize: 30,
+					volumeTypeNil: true,
+				},
+				{
+					name: "n2", region: "eu-west-1",
+					instanceType: "r7g.medium", volumeSize: 30,
+					volumeTypeNil: true,
+				},
+			},
+		},
+		{
+			name:         "instance-type only shorthand",
+			instanceType: "r7g.medium",
+			regions:      []string{"us-east-1"},
+			want: []nodeExp{
+				{
+					name: "n1", region: "us-east-1",
+					instanceType: "r7g.medium", volumeSizeNil: true,
+				},
+			},
+		},
+		{
+			name: "explicit --node values are parsed",
+			nodeFlags: []string{
+				"name=n1,instance-type=r7g.medium,volume-size=30",
+			},
+			regions: []string{"us-east-1"},
+			want: []nodeExp{
+				{
+					name: "n1", region: "us-east-1",
+					instanceType: "r7g.medium", volumeSize: 30,
+				},
+			},
+		},
+		{
+			name:         "--node and shorthand conflict",
+			nodeFlags:    []string{"name=n1"},
+			instanceType: "r7g.medium",
+			regions:      []string{"us-east-1"},
+			wantErr:      true,
+		},
+		{
+			name:      "parse errors propagate (gp3)",
+			nodeFlags: []string{"volume-type=gp3"},
+			regions:   []string{"us-east-1"},
+			wantErr:   true,
+		},
+	}
 
-	t.Run("shorthand synthesizes one node per region", func(t *testing.T) {
-		nodes, err := buildCreateNodes(nil, "r7g.medium", 30,
-			[]string{"us-east-1", "eu-west-1"})
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if len(nodes) != 2 {
-			t.Fatalf("nodes = %v, want 2", nodes)
-		}
-		if str(nodes[0].Name) != "n1" || nodes[0].Region != "us-east-1" {
-			t.Errorf("node[0] = %s/%s, want n1/us-east-1",
-				str(nodes[0].Name), nodes[0].Region)
-		}
-		if str(nodes[1].Name) != "n2" || nodes[1].Region != "eu-west-1" {
-			t.Errorf("node[1] = %s/%s, want n2/eu-west-1",
-				str(nodes[1].Name), nodes[1].Region)
-		}
-		for i, n := range nodes {
-			if str(n.InstanceType) != "r7g.medium" {
-				t.Errorf("node[%d] instance type = %q, want r7g.medium",
-					i, str(n.InstanceType))
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			nodes, err := buildCreateNodes(tt.nodeFlags,
+				tt.instanceType, tt.volumeSize, tt.regions)
+			if tt.wantErr {
+				if err == nil {
+					t.Fatal("want error, got nil")
+				}
+				return
 			}
-			if n.VolumeSize == nil || *n.VolumeSize != 30 {
-				t.Errorf("node[%d] volume size = %v, want 30", i, n.VolumeSize)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
 			}
-			if n.VolumeType != nil {
-				t.Errorf("node[%d] volume type = %q, want unset (server "+
-					"defaults to gp2; never gp3 per CLOUD-480)",
-					i, str(n.VolumeType))
+			if tt.wantNil {
+				if nodes != nil {
+					t.Errorf("nodes = %v, want nil", nodes)
+				}
+				return
 			}
-		}
-	})
-
-	t.Run("instance-type only shorthand", func(t *testing.T) {
-		nodes, err := buildCreateNodes(nil, "r7g.medium", 0,
-			[]string{"us-east-1"})
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if len(nodes) != 1 || nodes[0].VolumeSize != nil {
-			t.Errorf("nodes = %v, want one node with no volume size", nodes)
-		}
-	})
-
-	t.Run("explicit --node values are parsed", func(t *testing.T) {
-		nodes, err := buildCreateNodes(
-			[]string{"name=n1,instance-type=r7g.medium,volume-size=30"},
-			"", 0, []string{"us-east-1"})
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if len(nodes) != 1 || str(nodes[0].Name) != "n1" ||
-			nodes[0].Region != "us-east-1" {
-			t.Errorf("nodes = %v, want one node n1 in us-east-1", nodes)
-		}
-	})
-
-	t.Run("--node and shorthand conflict", func(t *testing.T) {
-		_, err := buildCreateNodes([]string{"name=n1"}, "r7g.medium", 0,
-			[]string{"us-east-1"})
-		if err == nil {
-			t.Error("want conflict error, got nil")
-		}
-	})
-
-	t.Run("parse errors propagate", func(t *testing.T) {
-		_, err := buildCreateNodes([]string{"volume-type=gp3"}, "", 0,
-			[]string{"us-east-1"})
-		if err == nil {
-			t.Error("want gp3 error, got nil")
-		}
-	})
+			if len(nodes) != len(tt.want) {
+				t.Fatalf("got %d nodes, want %d", len(nodes), len(tt.want))
+			}
+			for i, w := range tt.want {
+				n := nodes[i]
+				if str(n.Name) != w.name {
+					t.Errorf("node[%d] name = %q, want %q",
+						i, str(n.Name), w.name)
+				}
+				if n.Region != w.region {
+					t.Errorf("node[%d] region = %q, want %q",
+						i, n.Region, w.region)
+				}
+				if w.instanceType != "" &&
+					str(n.InstanceType) != w.instanceType {
+					t.Errorf("node[%d] instance type = %q, want %q",
+						i, str(n.InstanceType), w.instanceType)
+				}
+				if w.volumeSizeNil {
+					if n.VolumeSize != nil {
+						t.Errorf("node[%d] volume size = %v, want nil",
+							i, *n.VolumeSize)
+					}
+				} else if n.VolumeSize == nil ||
+					*n.VolumeSize != w.volumeSize {
+					t.Errorf("node[%d] volume size = %v, want %d",
+						i, n.VolumeSize, w.volumeSize)
+				}
+				if w.volumeTypeNil && n.VolumeType != nil {
+					t.Errorf("node[%d] volume type = %q, want unset "+
+						"(server defaults to gp2; never gp3 per "+
+						"CLOUD-480)", i, str(n.VolumeType))
+				}
+			}
+		})
+	}
 }
 
 func TestBuildCreateNetworks(t *testing.T) {
-	t.Run("nil without network flags", func(t *testing.T) {
-		networks, err := buildCreateNetworks(nil, []string{"us-east-1"})
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if networks != nil {
-			t.Errorf("networks = %v, want nil", networks)
-		}
-	})
+	tests := []struct {
+		name        string
+		flags       []string
+		regions     []string
+		wantErr     bool
+		wantNil     bool
+		wantRegions []string
+	}{
+		{
+			name:    "nil without network flags",
+			regions: []string{"us-east-1"},
+			wantNil: true,
+		},
+		{
+			name: "multiple networks parse in order",
+			flags: []string{
+				"region=us-east-1,cidr=10.4.0.0/16",
+				"region=eu-west-1,cidr=10.5.0.0/16",
+			},
+			regions:     []string{"us-east-1", "eu-west-1"},
+			wantRegions: []string{"us-east-1", "eu-west-1"},
+		},
+		{
+			name:    "parse errors propagate",
+			flags:   []string{"cidr=10.4.0.0/16"},
+			regions: []string{"us-east-1", "eu-west-1"},
+			wantErr: true,
+		},
+	}
 
-	t.Run("multiple networks parse in order", func(t *testing.T) {
-		networks, err := buildCreateNetworks([]string{
-			"region=us-east-1,cidr=10.4.0.0/16",
-			"region=eu-west-1,cidr=10.5.0.0/16",
-		}, []string{"us-east-1", "eu-west-1"})
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if len(networks) != 2 || networks[0].Region != "us-east-1" ||
-			networks[1].Region != "eu-west-1" {
-			t.Errorf("networks = %v, want us-east-1 then eu-west-1", networks)
-		}
-	})
-
-	t.Run("parse errors propagate", func(t *testing.T) {
-		_, err := buildCreateNetworks([]string{"cidr=10.4.0.0/16"},
-			[]string{"us-east-1", "eu-west-1"})
-		if err == nil {
-			t.Error("want region-required error, got nil")
-		}
-	})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			networks, err := buildCreateNetworks(tt.flags, tt.regions)
+			if tt.wantErr {
+				if err == nil {
+					t.Fatal("want error, got nil")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if tt.wantNil {
+				if networks != nil {
+					t.Errorf("networks = %v, want nil", networks)
+				}
+				return
+			}
+			if len(networks) != len(tt.wantRegions) {
+				t.Fatalf("got %d networks, want %d",
+					len(networks), len(tt.wantRegions))
+			}
+			for i, want := range tt.wantRegions {
+				if networks[i].Region != want {
+					t.Errorf("network[%d] region = %q, want %q",
+						i, networks[i].Region, want)
+				}
+			}
+		})
+	}
 }
 
 // setClusterCreateFlags sets the clusters create flag globals and

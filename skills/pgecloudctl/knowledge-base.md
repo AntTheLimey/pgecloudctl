@@ -76,7 +76,8 @@ are synchronous and have no `--wait`.
   `name=postgres,port=5432,sources=0.0.0.0/0`; name one of
   http|https|postgres|ssh),
   `--network` (repeatable, one per region;
-  `region=...,cidr=10.4.0.0/16,public-subnets=10.4.1.0/24,private-subnets=10.4.128.0/24`),
+  `region=...,cidr=10.4.0.0/16,`
+  `public-subnets=10.4.1.0/24,private-subnets=10.4.128.0/24`),
   `--node` (repeatable;
   `name=n1,region=...,instance-type=r7g.medium,volume-size=30`;
   volume-type gp3 rejected — CLOUD-480),
@@ -88,7 +89,7 @@ are synchronous and have no `--wait`.
   `--backup-store-id` (append), `--regions` (replace),
   `--wait`/`--timeout`/`--interval`; at least one flag required
 - `clusters delete <id>` — optional: `--yes`, `--force` (cascade
-  databases + infrastructure)
+  databases + infrastructure), `--wait`/`--timeout`/`--interval`
 
 ### clusters shares
 - `clusters shares list <cluster-id>` — output fields: id, name, tenancy,
